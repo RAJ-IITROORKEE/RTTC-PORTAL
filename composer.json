@@ -1,0 +1,23 @@
+{
+    "name": "rttc/admission-2026",
+    "description": "RTTC B.Ed. Admission Portal 2026",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "files": [
+            "helpers/EnvHelper.php",
+            "helpers/SecurityHelper.php",
+            "helpers/SessionHelper.php",
+            "helpers/ValidationHelper.php",
+            "helpers/RouteHelper.php",
+            "helpers/OTPHelper.php",
+            "config/database.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

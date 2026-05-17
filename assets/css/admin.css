@@ -1,0 +1,193 @@
+/* =========================================
+   RTTC 2026 - Admin CSS
+   Bootstrap 5.3 compatible
+   ========================================= */
+
+:root {
+    --admin-sidebar-width: 260px;
+    --admin-topbar-height: 60px;
+    --primary: #27276d;
+    --primary-dark: #1a1a4e;
+    --primary-light: #4a4ab0;
+}
+
+body.admin-body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f2f5;
+    overflow-x: hidden;
+}
+
+/* ---- Sidebar ---- */
+.admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--admin-sidebar-width);
+    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.admin-sidebar.collapsed {
+    transform: translateX(calc(-1 * var(--admin-sidebar-width)));
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-decoration: none;
+}
+
+.sidebar-brand-text {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.sidebar-brand-sub {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.75rem;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 0.5rem 0;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 0.5rem 0;
+}
+
+.nav-section-label {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 1rem 0.25rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border-radius: 0;
+    margin: 0 0.5rem;
+    border-radius: 0.375rem;
+}
+
+.sidebar-link:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.sidebar-link.active {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-weight: 600;
+}
+
+.sidebar-link i {
+    font-size: 1.1rem;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar-footer {
+    padding: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ---- Main wrapper ---- */
+.admin-main {
+    margin-left: var(--admin-sidebar-width);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+}
+
+.admin-main.expanded {
+    margin-left: 0;
+}
+
+/* ---- Top Bar ---- */
+.admin-topbar {
+    position: sticky;
+    top: 0;
+    height: var(--admin-topbar-height);
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ---- Content area ---- */
+.admin-content {
+    flex: 1;
+    padding: 1.5rem;
+}
+
+/* ---- Stat Cards ---- */
+.stat-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
+
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-value {
+    line-height: 1;
+}
+
+/* ---- Tables ---- */
+.table th {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(calc(-1 * var(--admin-sidebar-width)));
+    }
+    .admin-sidebar.show {
+        transform: translateX(0);
+    }
+    .admin-main {
+        margin-left: 0;
+    }
+}

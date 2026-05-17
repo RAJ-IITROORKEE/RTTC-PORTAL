@@ -1,0 +1,374 @@
+/* =========================================================
+   RTTC 2026 – Custom Bootstrap 5.3 Application Styles
+   Light theme | Primary: #27276d (Deep Blue)
+   ========================================================= */
+
+/* ── CSS Variables ──────────────────────────────────────── */
+:root {
+  --rttc-primary:      #27276d;
+  --rttc-primary-rgb:  39, 39, 109;
+  --rttc-primary-dark: #1a1a4e;
+  --rttc-primary-light:#4a4ab0;
+  --rttc-accent:       #0d6efd;
+  --rttc-success:      #198754;
+  --rttc-danger:       #dc3545;
+  --rttc-warning:      #ffc107;
+  --rttc-info:         #0dcaf0;
+  --rttc-light-bg:     #f8f9fa;
+  --rttc-card-bg:      #ffffff;
+  --rttc-border:       #dee2e6;
+  --rttc-text:         #212529;
+  --rttc-text-muted:   #6c757d;
+  --rttc-shadow-sm:    0 2px 8px rgba(39,39,109,.08);
+  --rttc-shadow:       0 4px 20px rgba(39,39,109,.12);
+  --rttc-shadow-lg:    0 8px 40px rgba(39,39,109,.18);
+  --rttc-radius:       .75rem;
+  --rttc-radius-sm:    .5rem;
+  --rttc-radius-lg:    1.25rem;
+  --rttc-transition:   all .25s ease;
+}
+
+/* ── Override Bootstrap Primary ─────────────────────────── */
+.btn-primary, .bg-primary { background-color: var(--rttc-primary) !important; border-color: var(--rttc-primary) !important; }
+.btn-primary:hover        { background-color: var(--rttc-primary-dark) !important; border-color: var(--rttc-primary-dark) !important; }
+.btn-outline-primary      { color: var(--rttc-primary) !important; border-color: var(--rttc-primary) !important; }
+.btn-outline-primary:hover{ background-color: var(--rttc-primary) !important; color: #fff !important; }
+.text-primary             { color: var(--rttc-primary) !important; }
+.border-primary           { border-color: var(--rttc-primary) !important; }
+
+/* ── Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--rttc-light-bg);
+  color: var(--rttc-text);
+  overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.rttc-navbar {
+  background: #fff;
+  border-bottom: 3px solid var(--rttc-primary);
+  box-shadow: var(--rttc-shadow-sm);
+  padding: .6rem 0;
+}
+.rttc-navbar .navbar-brand {
+  display: flex; align-items: center; gap: .6rem;
+  font-weight: 700; color: var(--rttc-primary) !important;
+  font-size: 1.1rem;
+}
+.rttc-navbar .navbar-brand img {
+  height: 48px; width: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rttc-primary);
+}
+.rttc-navbar .nav-link {
+  color: var(--rttc-primary) !important;
+  font-weight: 500;
+  padding: .4rem .9rem !important;
+  border-radius: var(--rttc-radius-sm);
+  transition: var(--rttc-transition);
+}
+.rttc-navbar .nav-link:hover,
+.rttc-navbar .nav-link.active {
+  background: rgba(var(--rttc-primary-rgb), .08);
+}
+
+/* ── Marquee Banner ─────────────────────────────────────── */
+.marquee-container {
+  background: linear-gradient(90deg, var(--rttc-primary), var(--rttc-primary-light));
+  color: #fff;
+  padding: .45rem 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee-container .marquee {
+  display: inline-block;
+  animation: marquee-scroll 30s linear infinite;
+  padding-left: 100%;
+  font-size: .9rem;
+  font-weight: 500;
+}
+.marquee-container .marquee .marquee-cta {
+  display: inline-block;
+  color: #fff;
+  background: rgba(255, 255, 255, .18);
+  border: 1px solid rgba(255, 255, 255, .38);
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: .78rem;
+  line-height: 1.4;
+}
+.marquee-container .marquee .marquee-cta:hover {
+  background: rgba(255, 255, 255, .28);
+  color: #fff;
+}
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.rttc-card {
+  background: var(--rttc-card-bg);
+  border: 1px solid var(--rttc-border);
+  border-radius: var(--rttc-radius);
+  box-shadow: var(--rttc-shadow-sm);
+  transition: var(--rttc-transition);
+}
+.rttc-card:hover {
+  box-shadow: var(--rttc-shadow);
+  transform: translateY(-3px);
+}
+.rttc-card .card-header-primary {
+  background: var(--rttc-primary);
+  color: #fff;
+  border-radius: var(--rttc-radius) var(--rttc-radius) 0 0;
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+}
+
+/* ── Auth Card ──────────────────────────────────────────── */
+.auth-card {
+  border: none;
+  border-radius: var(--rttc-radius-lg) !important;
+  box-shadow: var(--rttc-shadow-lg);
+  overflow: hidden;
+}
+
+/* Support both .auth-header and .auth-card-header */
+.auth-card .auth-header,
+.auth-card-header {
+  background: linear-gradient(135deg, var(--rttc-primary), var(--rttc-primary-light));
+  color: #fff;
+  border-radius: var(--rttc-radius-lg) var(--rttc-radius-lg) 0 0;
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+}
+.auth-card .auth-header img,
+.auth-card-header img {
+  height: 72px; width: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.7);
+  margin-bottom: .75rem;
+  object-fit: cover;
+}
+.auth-card .auth-header h4,
+.auth-card-header h4 { margin: 0; font-weight: 700; }
+.auth-card .auth-header small,
+.auth-card-header small { opacity: .85; }
+
+/* Support both .card-body and .auth-card-body */
+.auth-card .card-body,
+.auth-card-body { padding: 2rem 2.5rem; }
+
+/* Auth page wrapper – centres the card vertically on taller screens */
+.auth-page-wrapper {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.admin-auth-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, rgba(74, 74, 176, .28), transparent 42%),
+              radial-gradient(circle at bottom left, rgba(39, 39, 109, .18), transparent 38%),
+              linear-gradient(135deg, #f4f6fb, #eef2ff);
+}
+
+/* ── Form Controls ──────────────────────────────────────── */
+.form-control, .form-select {
+  border: 1.5px solid var(--rttc-border);
+  border-radius: var(--rttc-radius-sm);
+  padding: .55rem .9rem;
+  transition: var(--rttc-transition);
+  font-size: .93rem;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--rttc-primary);
+  box-shadow: 0 0 0 .2rem rgba(var(--rttc-primary-rgb), .2);
+}
+.form-label { font-weight: 500; font-size: .9rem; margin-bottom: .3rem; }
+.input-group-text {
+  background: rgba(var(--rttc-primary-rgb), .07);
+  border-color: var(--rttc-border);
+  color: var(--rttc-primary);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  border-radius: var(--rttc-radius-sm);
+  font-weight: 500;
+  padding: .5rem 1.3rem;
+  transition: var(--rttc-transition);
+}
+.btn-rttc-primary {
+  background: var(--rttc-primary);
+  border-color: var(--rttc-primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(var(--rttc-primary-rgb), .3);
+}
+.btn-rttc-primary:hover {
+  background: var(--rttc-primary-dark);
+  border-color: var(--rttc-primary-dark);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(var(--rttc-primary-rgb), .4);
+  transform: translateY(-1px);
+}
+.btn-rttc-success {
+  background: var(--rttc-success); border-color: var(--rttc-success); color: #fff;
+  box-shadow: 0 4px 14px rgba(25,135,84,.3);
+}
+.btn-rttc-success:hover {
+  background: #146c43; border-color: #146c43; color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.alert { border-radius: var(--rttc-radius-sm); border: none; }
+.alert-primary  { background:#e8e8f4; color:var(--rttc-primary); border-left:4px solid var(--rttc-primary); }
+.alert-success  { background:#d1e7dd; color:#0f5132; border-left:4px solid #198754; }
+.alert-danger   { background:#f8d7da; color:#842029; border-left:4px solid #dc3545; }
+.alert-warning  { background:#fff3cd; color:#664d03; border-left:4px solid #ffc107; }
+.alert-info     { background:#cff4fc; color:#055160; border-left:4px solid #0dcaf0; }
+
+/* ── Progress Stepper ───────────────────────────────────── */
+.rttc-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 1.5rem 0;
+  margin-bottom: 1.5rem;
+}
+.rttc-stepper .step {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 1; position: relative; text-align: center;
+}
+.rttc-stepper .step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 20px);
+  width: calc(100% - 40px);
+  height: 3px;
+  background: var(--rttc-border);
+  z-index: 0;
+  transition: var(--rttc-transition);
+}
+.rttc-stepper .step.completed:not(:last-child)::after {
+  background: var(--rttc-success);
+}
+.rttc-stepper .step.active:not(:last-child)::after {
+  background: linear-gradient(90deg, var(--rttc-primary), var(--rttc-border));
+}
+
+.step-circle {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem;
+  border: 3px solid var(--rttc-border);
+  background: #fff;
+  color: var(--rttc-text-muted);
+  z-index: 1;
+  transition: var(--rttc-transition);
+  position: relative;
+}
+.step.completed .step-circle {
+  background: var(--rttc-success);
+  border-color: var(--rttc-success);
+  color: #fff;
+}
+.step.active .step-circle {
+  background: var(--rttc-primary);
+  border-color: var(--rttc-primary);
+  color: #fff;
+  box-shadow: 0 0 0 5px rgba(var(--rttc-primary-rgb),.18);
+}
+.step-label {
+  font-size: .78rem;
+  margin-top: .4rem;
+  font-weight: 600;
+  color: var(--rttc-text-muted);
+}
+.step.active .step-label   { color: var(--rttc-primary); }
+.step.completed .step-label{ color: var(--rttc-success); }
+
+/* ── Section Titles ─────────────────────────────────────── */
+.section-title {
+  font-weight: 700; font-size: 1.3rem;
+  color: var(--rttc-primary);
+  border-left: 4px solid var(--rttc-primary);
+  padding-left: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+.rttc-table { font-size: .88rem; }
+.rttc-table thead th {
+  background: var(--rttc-primary);
+  color: #fff; font-weight: 600;
+  border: none; padding: .85rem .75rem;
+}
+.rttc-table tbody tr { transition: var(--rttc-transition); }
+.rttc-table tbody tr:hover { background: rgba(var(--rttc-primary-rgb),.04); }
+
+/* ── Badge ──────────────────────────────────────────────── */
+.badge-step { font-size: .75rem; padding: .3rem .6rem; border-radius: 1rem; }
+
+/* ── Footer ─────────────────────────────────────────────── */
+.rttc-footer {
+  background: var(--rttc-primary);
+  color: rgba(255,255,255,.85);
+  padding: 2rem 0 1rem;
+  margin-top: 4rem;
+  font-size: .88rem;
+}
+.rttc-footer a { color: rgba(255,255,255,.75); text-decoration: none; }
+.rttc-footer a:hover { color: #fff; }
+.rttc-footer hr { border-color: rgba(255,255,255,.2); }
+
+/* ── Spinner Overlay ─────────────────────────────────────── */
+#page-loader {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,.75);
+  z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#page-loader .spinner-grow { color: var(--rttc-primary); width: 3rem; height: 3rem; }
+
+/* ── Captcha ─────────────────────────────────────────────── */
+.captcha-box {
+  background: #f4f6fb;
+  border: 2px dashed rgba(var(--rttc-primary-rgb), .3);
+  border-radius: var(--rttc-radius-sm);
+  padding: 1rem;
+  text-align: center;
+}
+.captcha-box img { border-radius: 6px; }
+.captcha-refresh { cursor: pointer; color: var(--rttc-primary); font-size: 1.1rem; transition: var(--rttc-transition); }
+.captcha-refresh:hover { transform: rotate(180deg); color: var(--rttc-primary-dark); }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .auth-card .card-body,
+  .auth-card-body { padding: 1.5rem 1.25rem; }
+  .auth-card .auth-header,
+  .auth-card-header { padding: 1.5rem 1.25rem 1.2rem; }
+  .rttc-stepper .step-label { font-size: .68rem; }
+  .step-circle { width: 32px; height: 32px; font-size: .8rem; }
+  .rttc-stepper .step:not(:last-child)::after { top: 16px; left: calc(50% + 16px); width: calc(100% - 32px); }
+}
+
+/* ── Utility ─────────────────────────────────────────────── */
+.hover-shadow:hover { box-shadow: var(--rttc-shadow) !important; transition: var(--rttc-transition); }
+.rounded-rttc       { border-radius: var(--rttc-radius) !important; }

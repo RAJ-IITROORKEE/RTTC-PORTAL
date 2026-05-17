@@ -1,0 +1,55 @@
+Options -MultiViews
+Options -Indexes
+
+# Deny access to sensitive files
+<FilesMatch "(\.env|composer\.(json|lock))$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+RewriteEngine On
+
+# ── Clean URL rewrites ────────────────────────────────────────
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^login$                   login.php [L,QSA]
+RewriteRule ^signup$                  signup.php [L,QSA]
+RewriteRule ^logout$                  logout.php [L,QSA]
+RewriteRule ^welcome$                 welcome.php [L,QSA]
+RewriteRule ^registration$            registration.php [L,QSA]
+RewriteRule ^academics$               academics.php [L,QSA]
+RewriteRule ^documents$               documents.php [L,QSA]
+RewriteRule ^forgot-password$         forgot-password.php [L,QSA]
+RewriteRule ^payment$                 payment/index.php [L,QSA]
+RewriteRule ^payment/confirmation$    payment/confirmation.php [L,QSA]
+RewriteRule ^api/send-otp$            api/send-otp.php [L,QSA]
+RewriteRule ^api/verify-otp$          api/verify-otp.php [L,QSA]
+RewriteRule ^api/check-email$         api/check-email.php [L,QSA]
+RewriteRule ^api/payment-process$     api/payment-process.php [L,QSA]
+RewriteRule ^api/payment-webhook$     api/payment-webhook.php [L,QSA]
+RewriteRule ^admin/login$             admin/login.php [L,QSA]
+RewriteRule ^admin/logout$            admin/logout.php [L,QSA]
+RewriteRule ^admin/dashboard$         admin/dashboard.php [L,QSA]
+RewriteRule ^admin/export$            admin/export.php [L,QSA]
+RewriteRule ^admin/students$          admin/students/index.php [L,QSA]
+RewriteRule ^admin/students/view$     admin/students/view.php [L,QSA]
+RewriteRule ^admin/applications$      admin/applications/index.php [L,QSA]
+RewriteRule ^admin/payments$          admin/payments/index.php [L,QSA]
+RewriteRule ^admin/settings$          admin/settings.php [L,QSA]
+RewriteRule ^admin/notice-documents$  admin/notice-documents.php [L,QSA]
+RewriteRule ^admin/marquee$           admin/marquee.php [L,QSA]
+RewriteRule ^error/404$               error/404.php [L,QSA]
+
+# Catch-all: friendly 404 page for unknown routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ error/404.php [L,QSA]
+
+# ── Security headers ──────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
