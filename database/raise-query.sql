@@ -17,6 +17,8 @@ USE `rangiatt_2026`;
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `student_queries` (
   `id`              INT(11)       NOT NULL AUTO_INCREMENT,
+  `user_id`         INT(11)       DEFAULT NULL
+                    COMMENT 'Linked users.id if raised by a logged-in student; NULL for guests',
   `name`            VARCHAR(150)  NOT NULL,
   `email`           VARCHAR(191)  NOT NULL,
   `phone`           VARCHAR(20)   NOT NULL,
@@ -32,7 +34,10 @@ CREATE TABLE IF NOT EXISTS `student_queries` (
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_sq_email`  (`email`),
-  KEY `idx_sq_status` (`status`)
+  KEY `idx_sq_status` (`status`),
+  KEY `idx_sq_user_id`(`user_id`),
+  CONSTRAINT `fk_sq_user` FOREIGN KEY (`user_id`)
+    REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Student/visitor queries raised via the Raise Query form';
 
@@ -68,3 +73,11 @@ CREATE TABLE IF NOT EXISTS `user_edit_access` (
 -- Done. Run the rest of the portal schema (schema.sql) first
 -- if starting from scratch.
 -- ============================================================
+UPATED:
+ALTER TABLE `student_queries`
+  ADD COLUMN `user_id` INT(11) DEFAULT NULL
+    COMMENT 'Linked users.id if query raised by logged-in student (NULL for guests)'
+    AFTER `id`,
+  ADD KEY `idx_sq_user_id` (`user_id`),
+  ADD CONSTRAINT `fk_sq_user` FOREIGN KEY (`user_id`)
+    REFERENCES `users`(`id`) ON DELETE SET NULL;

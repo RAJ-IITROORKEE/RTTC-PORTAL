@@ -51,6 +51,7 @@ $baseUrl    = rtrim(APP_URL, '/');
             </a>
           </li>
           <!-- User dropdown -->
+
           <li class="nav-item dropdown ms-2">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
                style="background:rgba(39,39,109,.08);"

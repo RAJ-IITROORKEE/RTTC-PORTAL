@@ -7,6 +7,12 @@
 define('APP_INIT', true);
 require_once __DIR__ . '/../config/init.php';
 
+// Read everything we need from session, then release the lock immediately.
+// PHP session files are locked for the duration of the script; releasing early
+// prevents this AJAX request from blocking (or being blocked by) the page load.
+$userId = SessionHelper::isLoggedIn() ? SessionHelper::get('user_id') : null;
+session_write_close();
+
 $conn = db();
 
 header('Content-Type: application/json');
@@ -17,14 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Rate limiting via session (max 3 queries per session)
-$queryCount = SessionHelper::get('query_submit_count', 0);
-if ($queryCount >= 3) {
-    echo json_encode(['success' => false, 'message' => 'You have submitted too many queries. Please wait and try again later.']);
-    exit;
-}
-
-// Collect & sanitize inputs
+// Collect & sanitize inputs FIRST (need email for rate-limit check)
 $name    = trim($_POST['name']    ?? '');
 $email   = trim($_POST['email']   ?? '');
 $phone   = trim($_POST['phone']   ?? '');
@@ -45,31 +44,47 @@ if (!empty($errors)) {
     exit;
 }
 
-// Get user_id if logged in
-$userId = SessionHelper::isLoggedIn() ? SessionHelper::get('user_id') : null;
+// Per-email rate limit: max 3 queries per calendar day
+try {
+    $rateStmt = $conn->prepare("
+        SELECT COUNT(*) AS cnt
+        FROM student_queries
+        WHERE email = ? AND DATE(created_at) = CURDATE()
+    ");
+    if (!$rateStmt) throw new RuntimeException('Rate-limit prepare failed: ' . $conn->error);
+    $rateStmt->bind_param('s', $email);
+    $rateStmt->execute();
+    $rateRow = $rateStmt->get_result()->fetch_assoc();
+    $rateStmt->close();
+
+    if ((int)$rateRow['cnt'] >= 3) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'You have already submitted 3 queries today. Please try again tomorrow.'
+        ]);
+        exit;
+    }
+} catch (Throwable $e) {
+    error_log('submit-query rate-limit error: ' . $e->getMessage());
+    // Non-fatal: let the insert proceed
+}
 
 // Insert into student_queries
-$stmt = $conn->prepare("
-    INSERT INTO student_queries (user_id, name, email, phone, issue_subject, message, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
-");
-$stmt->bind_param(
-    'isssss',
-    $userId,
-    $name,
-    $email,
-    $phone,
-    $subject,
-    $message
-);
-
-if ($stmt->execute()) {
-    // Update session rate limit
-    SessionHelper::set('query_submit_count', $queryCount + 1);
+try {
+    $stmt = $conn->prepare("
+        INSERT INTO student_queries (user_id, name, email, phone, issue_subject, message, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+    ");
+    if (!$stmt) {
+        throw new RuntimeException('Prepare failed: ' . $conn->error);
+    }
+    $stmt->bind_param('isssss', $userId, $name, $email, $phone, $subject, $message);
+    if (!$stmt->execute()) {
+        throw new RuntimeException('Execute failed: ' . $stmt->error);
+    }
     $stmt->close();
     echo json_encode(['success' => true, 'message' => 'Query submitted successfully.']);
-} else {
-    $stmt->close();
-    error_log('submit-query DB error: ' . $conn->error);
+} catch (Throwable $e) {
+    error_log('submit-query error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database error. Please try again later.']);
 }

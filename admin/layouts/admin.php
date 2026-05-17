@@ -137,5 +137,6 @@ document.getElementById('sidebarToggle')?.addEventListener('click', function() {
     document.getElementById('adminMain').classList.toggle('expanded');
 });
 </script>
+<?= $extraFoot ?? '' ?>
 </body>
 </html>

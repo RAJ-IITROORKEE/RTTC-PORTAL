@@ -184,41 +184,19 @@ ob_start();
             </td>
             <td class="small text-muted"><?= date('d M Y', strtotime($q['created_at'])) ?><br><?= date('H:i', strtotime($q['created_at'])) ?></td>
             <td class="text-end">
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+              <div class="tbl-action-wrap">
+                <button class="btn btn-sm btn-light border tbl-action-btn p-1 px-2"
+                        type="button"
+                        data-qid="<?= $q['id'] ?>"
+                        data-qname="<?= htmlspecialchars($q['name'], ENT_QUOTES) ?>"
+                        data-qemail="<?= htmlspecialchars($q['email'], ENT_QUOTES) ?>"
+                        data-qsubject="<?= htmlspecialchars($q['issue_subject'], ENT_QUOTES) ?>"
+                        data-quid="<?= (int)($q['user_id'] ?? 0) ?>"
+                        data-qstatus="<?= $q['status'] ?>"
+                        data-qaccess="<?= $q['edit_access_granted'] ? '1' : '0' ?>"
+                        aria-label="Actions">
                   <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                  <li>
-                    <a class="dropdown-item" href="#"
-                       onclick="openReplyModal(<?= $q['id'] ?>, <?= json_encode($q['name']) ?>, <?= json_encode($q['email']) ?>, <?= json_encode($q['issue_subject']) ?>); return false;">
-                      <i class="bi bi-reply me-2 text-primary"></i>Reply & Resolve
-                    </a>
-                  </li>
-                  <?php if (!$q['edit_access_granted'] && $q['user_id']): ?>
-                  <li>
-                    <a class="dropdown-item" href="#"
-                       onclick="grantEditAccess(<?= $q['id'] ?>, <?= (int)$q['user_id'] ?>, <?= json_encode($q['name']) ?>); return false;">
-                      <i class="bi bi-pencil-square me-2 text-warning"></i>Grant Edit Access
-                    </a>
-                  </li>
-                  <?php endif; ?>
-                  <?php if ($q['status'] === 'pending'): ?>
-                  <li>
-                    <a class="dropdown-item" href="#"
-                       onclick="markResolved(<?= $q['id'] ?>); return false;">
-                      <i class="bi bi-check-circle me-2 text-success"></i>Mark Resolved
-                    </a>
-                  </li>
-                  <?php endif; ?>
-                  <li><hr class="dropdown-divider"></li>
-                  <li>
-                    <a class="dropdown-item text-danger" href="#"
-                       onclick="deleteQuery(<?= $q['id'] ?>); return false;">
-                      <i class="bi bi-trash me-2"></i>Delete
-                    </a>
-                  </li>
-                </ul>
               </div>
             </td>
           </tr>
@@ -287,7 +265,9 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-$extraFoot = <<<'JS'
+$urlQueryReply  = route('api.admin.query-reply');
+$urlQueryAction = route('api.admin.query-action');
+$extraFoot = <<<JS
 <script>
 let activeQueryId = null;
 let activeUserId  = null;
@@ -318,7 +298,7 @@ document.getElementById('sendReplyBtn').addEventListener('click', function () {
   data.append('reply_message', msg);
   data.append('grant_access', document.getElementById('grantAccessCheck').checked ? '1' : '0');
 
-  fetch('/api/admin-query-reply', { method: 'POST', body: data })
+  fetch('{$urlQueryReply}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => {
       if (res.success) {
@@ -353,7 +333,7 @@ document.getElementById('confirmGrantBtn').addEventListener('click', function ()
   data.append('query_id', activeQueryId);
   data.append('user_id', activeUserId);
 
-  fetch('/api/admin-query-action', { method: 'POST', body: data })
+  fetch('{$urlQueryAction}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => {
       if (res.success) {
@@ -373,7 +353,7 @@ function markResolved(queryId) {
   const data = new FormData();
   data.append('action', 'mark_resolved');
   data.append('query_id', queryId);
-  fetch('/api/admin-query-action', { method: 'POST', body: data })
+  fetch('{$urlQueryAction}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => { if (res.success) location.reload(); else alert(res.message || 'Error'); });
 }
@@ -384,7 +364,7 @@ function deleteQuery(queryId) {
   const data = new FormData();
   data.append('action', 'delete');
   data.append('query_id', queryId);
-  fetch('/api/admin-query-action', { method: 'POST', body: data })
+  fetch('{$urlQueryAction}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => { if (res.success) location.reload(); else alert(res.message || 'Error'); });
 }
@@ -395,6 +375,129 @@ function setLoading(btn, loading) {
   btn.querySelector('.spinner-border').classList.toggle('d-none', !loading);
   btn.disabled = loading;
 }
+
+// ---- Table action dropdown ----
+(function () {
+  // Inject styles
+  var style = document.createElement('style');
+  style.textContent =
+    '.tbl-action-wrap { display:inline-block; }' +
+    '.tbl-action-btn { line-height:1; }' +
+    '.tbl-action-btn:focus { box-shadow:none !important; }' +
+    '.tbl-action-btn.is-open { background:#e9ecef; }' +
+    '#tblFloatMenu {' +
+    '  position:fixed; z-index:99999; background:#fff; list-style:none; margin:0;' +
+    '  padding:4px 0; min-width:195px; border-radius:10px;' +
+    '  box-shadow:0 4px 20px rgba(0,0,0,.15); font-size:.875rem;' +
+    '  animation:tblIn .1s ease;' +
+    '}' +
+    '@keyframes tblIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }' +
+    '#tblFloatMenu li a {' +
+    '  display:flex; align-items:center; padding:9px 16px;' +
+    '  color:#212529; text-decoration:none; white-space:nowrap;' +
+    '}' +
+    '#tblFloatMenu li a:hover { background:#f5f5f5; }' +
+    '#tblFloatMenu li a.danger { color:#dc3545; }' +
+    '#tblFloatMenu li a.danger:hover { background:#fff0f0; }' +
+    '#tblFloatMenu .sep { border-top:1px solid #eee; margin:3px 0; }';
+  document.head.appendChild(style);
+
+  // Build single reusable floating menu element
+  var menu = document.createElement('ul');
+  menu.id = 'tblFloatMenu';
+  menu.style.display = 'none';
+  document.body.appendChild(menu);
+
+  var openBtn = null;
+
+  function hideMenu() {
+    menu.style.display = 'none';
+    if (openBtn) { openBtn.classList.remove('is-open'); openBtn = null; }
+  }
+
+  function showMenu(btn) {
+    if (openBtn === btn) { hideMenu(); return; }
+    hideMenu();
+
+    var d = btn.dataset;
+    var qid     = d.qid;
+    var name    = d.qname;
+    var email   = d.qemail;
+    var subject = d.qsubject;
+    var uid     = parseInt(d.quid, 10);
+    var status  = d.qstatus;
+    var access  = d.qaccess === '1';
+
+    // Build items
+    var items = [];
+
+    items.push({ label:'<i class="bi bi-reply me-2 text-primary"></i>Reply &amp; Resolve', action:'reply' });
+
+    if (!access && uid > 0) {
+      items.push({ label:'<i class="bi bi-pencil-square me-2 text-warning"></i>Grant Edit Access', action:'grant' });
+    }
+    if (status === 'pending') {
+      items.push({ label:'<i class="bi bi-check-circle me-2 text-success"></i>Mark Resolved', action:'resolve' });
+    }
+    items.push({ sep: true });
+    items.push({ label:'<i class="bi bi-trash me-2"></i>Delete', action:'delete', cls:'danger' });
+
+    menu.innerHTML = '';
+    items.forEach(function(item) {
+      var li = document.createElement('li');
+      if (item.sep) { li.className = 'sep'; menu.appendChild(li); return; }
+      var a = document.createElement('a');
+      a.href = '#';
+      a.innerHTML = item.label;
+      if (item.cls) a.className = item.cls;
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        hideMenu();
+        if (item.action === 'reply')   openReplyModal(qid, name, email, subject);
+        if (item.action === 'grant')   grantEditAccess(qid, uid, name);
+        if (item.action === 'resolve') markResolved(qid);
+        if (item.action === 'delete')  deleteQuery(qid);
+      });
+      li.appendChild(a);
+      menu.appendChild(li);
+    });
+
+    // Position
+    menu.style.display = 'block';
+    var r      = btn.getBoundingClientRect();
+    var mh     = menu.offsetHeight;
+    var right  = window.innerWidth - r.right;
+    menu.style.right = right + 'px';
+    menu.style.left  = 'auto';
+
+    var spaceBelow = window.innerHeight - r.bottom - 8;
+    if (spaceBelow < mh) {
+      menu.style.top    = 'auto';
+      menu.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+    } else {
+      menu.style.bottom = 'auto';
+      menu.style.top    = (r.bottom + 4) + 'px';
+    }
+
+    openBtn = btn;
+    btn.classList.add('is-open');
+  }
+
+  // Direct listeners on each button (avoids event-delegation issues with admin layout)
+  document.querySelectorAll('.tbl-action-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenu(btn);
+    });
+  });
+
+  // Close on outside click
+  document.addEventListener('click', hideMenu);
+  // Close on scroll/resize
+  window.addEventListener('scroll', hideMenu, true);
+  window.addEventListener('resize', hideMenu);
+})();
 </script>
 JS;
 
