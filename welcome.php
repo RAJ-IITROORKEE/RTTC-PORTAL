@@ -17,6 +17,18 @@ $stmt->close();
 $currentStep  = $prog['current_step'] ?? 0;
 $isSubmitted  = $prog['is_submitted'] ?? 0;
 
+// Check if admin has granted active edit access to this user
+$editAccess = false;
+$now = date('Y-m-d H:i:s');
+$stmtEA = $db->prepare(
+    "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1"
+);
+$stmtEA->bind_param('is', $userId, $now);
+$stmtEA->execute();
+$stmtEA->store_result();
+$editAccess = $stmtEA->num_rows > 0;
+$stmtEA->close();
+
 // Get user info
 $stmt2 = $db->prepare("SELECT username, email, phone, created_at FROM users WHERE id = ?");
 $stmt2->bind_param('i', $userId);
@@ -88,9 +100,15 @@ ob_start();
                     <h6 class="fw-bold">Personal Details</h6>
                     <p class="text-muted small mb-3">Name, DOB, family info, address</p>
                     <?php if ($currentStep >= 1): ?>
-                        <a href="<?= route('registration') ?>" class="btn btn-sm btn-outline-success">
+                        <?php if ($editAccess): ?>
+                        <a href="<?= route('registration') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
+                        <?php else: ?>
+                        <a href="<?= route('registration') ?>?view=1" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                        <?php endif; ?>
                     <?php elseif ($currentStep === 0): ?>
                         <a href="<?= route('registration') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Start
@@ -116,9 +134,15 @@ ob_start();
                     <h6 class="fw-bold">Academic Details</h6>
                     <p class="text-muted small mb-3">HSLC, HSSLC, Degree, GUBEDCET</p>
                     <?php if ($currentStep >= 2): ?>
-                        <a href="<?= route('academics') ?>" class="btn btn-sm btn-outline-success">
+                        <?php if ($editAccess): ?>
+                        <a href="<?= route('academics') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
+                        <?php else: ?>
+                        <a href="<?= route('academics') ?>?view=1" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                        <?php endif; ?>
                     <?php elseif ($currentStep === 1): ?>
                         <a href="<?= route('academics') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Fill Now
@@ -144,9 +168,15 @@ ob_start();
                     <h6 class="fw-bold">Upload Documents</h6>
                     <p class="text-muted small mb-3">Photo, signature, certificates</p>
                     <?php if ($currentStep >= 3): ?>
-                        <a href="<?= route('documents') ?>" class="btn btn-sm btn-outline-success">
+                        <?php if ($editAccess): ?>
+                        <a href="<?= route('documents') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
+                        <?php else: ?>
+                        <a href="<?= route('documents') ?>?view=1" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                        <?php endif; ?>
                     <?php elseif ($currentStep === 2): ?>
                         <a href="<?= route('documents') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Upload

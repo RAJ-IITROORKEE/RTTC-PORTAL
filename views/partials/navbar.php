@@ -45,13 +45,11 @@ $baseUrl    = rtrim(APP_URL, '/');
             </a>
           </li>
           <?php endif; ?>
-          <?php if ($progress === 4): ?>
           <li class="nav-item">
-            <a class="nav-link <?= $activeNav === 'confirmation' ? 'active' : '' ?>" href="<?= route('payment.confirmation') ?>">
-              <i class="bi bi-download me-1"></i>Download
+            <a class="nav-link <?= $activeNav === 'request-query' ? 'active' : '' ?>" href="<?= route('request-query') ?>">
+              <i class="bi bi-chat-left-text me-1"></i>Raise Query
             </a>
           </li>
-          <?php endif; ?>
           <!-- User dropdown -->
           <li class="nav-item dropdown ms-2">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-pill"

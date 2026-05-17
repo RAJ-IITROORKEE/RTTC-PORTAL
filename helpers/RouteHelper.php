@@ -57,6 +57,16 @@ function route(string $name, array $params = []): string
         'admin.notice-documents'  => '/admin/notice-documents',
         'admin.marquee'           => '/admin/marquee',
 
+        // Query / Support
+        'request-query'           => '/request-query',
+        'api.submit-query'        => '/api/submit-query',
+
+        // Admin - Queries
+        'admin.queries'           => '/admin/queries',
+        'admin.queries.index'     => '/admin/queries',
+        'api.admin.query-reply'   => '/api/admin-query-reply',
+        'api.admin.query-action'  => '/api/admin-query-action',
+
         // Errors
         'error.404'               => '/error/404',
         'error.403'               => '/error/403',

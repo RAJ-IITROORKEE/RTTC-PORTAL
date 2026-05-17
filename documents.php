@@ -66,6 +66,23 @@ if ($userPwd) {
     $docDefs['pwd_cert']     = ['PWD Certificate',                        true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']];
 }
 
+// ── View-only mode ─────────────────────────────────────────────────────────
+$now    = date('Y-m-d H:i:s');
+$stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1");
+$stmtEA->bind_param('is', $userId, $now);
+$stmtEA->execute();
+$stmtEA->store_result();
+$editAccess = $stmtEA->num_rows > 0;
+$stmtEA->close();
+
+$stepDone = !empty($existing);
+$viewOnly = $stepDone && !$editAccess;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
+    redirect(route('welcome'), [], 'error', 'Your documents are in view-only mode. Request edit access from admin.');
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
 
@@ -156,7 +173,8 @@ foreach ($docDefs as $field => [$label, $required, $accept, $maxKB, $allowedType
 }
 
 $pageTitle   = 'Upload Documents - Step 3 - RTTC 2026';
-$currentStep = 3;
+// Use actual overall progress so stepper reflects true completion state
+$currentStep = $prog['current_step'] ?? 3;
 ob_start();
 ?>
 
@@ -166,6 +184,19 @@ ob_start();
     </div>
     <?php include __DIR__ . '/views/partials/flash.php'; ?>
 
+    <?php if ($viewOnly): ?>
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-start gap-3 mb-4" role="alert" style="border-left:4px solid #0d6efd !important;">
+        <i class="bi bi-info-circle-fill fs-5 mt-1 text-primary flex-shrink-0"></i>
+        <div>
+            <strong>Documents — View Only</strong><br>
+            <span class="small">Your uploaded documents have already been submitted and <strong>cannot be replaced</strong> at this time.
+            If you need to re-upload any document, please
+            <a href="<?= route('request-query') ?>" class="alert-link fw-semibold">raise a query</a>
+            and the admin may grant you temporary edit access.</span>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="alert alert-info border-0 shadow-sm mb-4">
         <i class="bi bi-info-circle-fill me-2"></i>
         <strong>Upload Guidelines:</strong>
@@ -174,7 +205,7 @@ ob_start();
         Dimensions: Photo 3.5&times;4.5 cm | Signature 7&times;3 cm.
     </div>
 
-    <form method="POST" action="<?= route('documents') ?>" enctype="multipart/form-data" id="docsForm" novalidate>
+    <form method="POST" action="<?= route('documents') ?>" enctype="multipart/form-data" id="docsForm" novalidate<?= $viewOnly ? ' data-viewonly="1"' : '' ?>>
         <?= SecurityHelper::csrfField() ?>
 
         <!-- Photo & Signature -->
@@ -367,9 +398,11 @@ ob_start();
                 <button type="button" class="btn btn-outline-primary btn-lg px-4" id="docPreviewBtn">
                     <i class="bi bi-eye me-1"></i>Preview Documents
                 </button>
+                <?php if (!$viewOnly): ?>
                 <button type="submit" class="btn btn-primary btn-lg px-5" id="docSaveBtn" disabled>
                     Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
                 </button>
+                <?php endif; ?>
             </div>
         </div>
     </form>
@@ -443,6 +476,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Per-field validation config from PHP
     const docConfig = <?= json_encode(array_values($jsDocConfig)) ?>;
 
+    // Existing uploaded files from DB (paths), used in view-only preview
+    const existingDocs = <?= json_encode($existing ?: new stdClass()) ?>;
+    const baseUrl      = <?= json_encode(rtrim(BASE_URL, '/')) ?>;
+    const isViewOnly   = <?= $viewOnly ? 'true' : 'false' ?>;
+
     // Build lookup map: field -> config
     const configMap = {};
     docConfig.forEach(c => { configMap[c.field] = c; });
@@ -454,9 +492,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── Declaration checkbox toggle ───────────────────────────────
     function toggleSaveBtn() {
-        saveBtn.disabled = !declaration.checked;
+        if (saveBtn) saveBtn.disabled = !declaration?.checked;
     }
-    declaration.addEventListener('change', toggleSaveBtn);
+    declaration?.addEventListener('change', toggleSaveBtn);
     toggleSaveBtn(); // initial state
 
     // ─── Per-field instant file validation ─────────────────────────
@@ -536,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ─── Confirm submit button ─────────────────────────────────────
-    document.getElementById('docConfirmSubmitBtn').addEventListener('click', function () {
+    document.getElementById('docConfirmSubmitBtn')?.addEventListener('click', function () {
         finalSubmit = true;
         form.submit();
     });
@@ -561,6 +599,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let row = '';
 
             if (input.files && input.files.length > 0) {
+                // New file selected by user (edit mode)
                 anyFile = true;
                 const file    = input.files[0];
                 const fileURL = URL.createObjectURL(file);
@@ -592,21 +631,46 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td class="small">${file.type || ext.toUpperCase()}</td>
                     <td>${statusBadge}</td>
                 </tr>`;
+
+            } else if (existingDocs[cfg.field]) {
+                // Already uploaded file from DB
+                anyFile = true;
+                const path = existingDocs[cfg.field];
+                const ext  = path.split('.').pop().toLowerCase();
+                const name = path.split('/').pop();
+                const url  = baseUrl + '/' + path;
+
+                let previewCell = '';
+                if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                    previewCell = `<img src="${url}" class="img-thumbnail" style="max-height:80px;max-width:120px;" alt="${cfg.label}">`;
+                } else if (ext === 'pdf') {
+                    previewCell = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-pdf me-1"></i>View PDF</a>`;
+                } else {
+                    previewCell = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>View</a>`;
+                }
+
+                row = `<tr>
+                    <td><strong>${cfg.label}</strong>${cfg.required ? ' <span class="text-danger">*</span>' : ''}</td>
+                    <td>${previewCell}</td>
+                    <td class="small">${name}</td>
+                    <td class="small">—</td>
+                    <td class="small">${ext.toUpperCase()}</td>
+                    <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Uploaded</span></td>
+                </tr>`;
+
             } else {
-                // No new file — show if existing or missing
-                const isRequired = cfg.required;
-                // We can't check existing from JS reliably; show placeholder
+                // No file at all
                 row = `<tr class="table-light">
                     <td><strong>${cfg.label}</strong>${cfg.required ? ' <span class="text-danger">*</span>' : ''}</td>
-                    <td colspan="4"><em class="text-muted">No new file selected</em></td>
-                    <td>${isRequired ? '<span class="badge bg-secondary">Required</span>' : '<span class="badge bg-light text-muted">Optional</span>'}</td>
+                    <td colspan="4"><em class="text-muted">Not uploaded</em></td>
+                    <td>${cfg.required ? '<span class="badge bg-warning text-dark">Missing</span>' : '<span class="badge bg-light text-muted border">Optional</span>'}</td>
                 </tr>`;
             }
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
         if (!anyFile) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No files selected yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No files uploaded yet.</td></tr>';
         }
     }
 
@@ -633,6 +697,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+<?php if ($viewOnly): ?>
+<style>
+#docsForm input, #docsForm select, #docsForm textarea,
+#docsForm .form-check-input, #docsForm input[type="file"] {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: text;
+}
+#docsForm button:not(#docPreviewBtn) { pointer-events: none !important; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('docsForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+        }, true);
+    }
+});
+</script>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

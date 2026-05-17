@@ -26,6 +26,23 @@ $stmt->execute();
 $existing = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// ── View-only mode ─────────────────────────────────────────────────────────
+$now    = date('Y-m-d H:i:s');
+$stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1");
+$stmtEA->bind_param('is', $userId, $now);
+$stmtEA->execute();
+$stmtEA->store_result();
+$editAccess = $stmtEA->num_rows > 0;
+$stmtEA->close();
+
+$stepDone = !empty($existing);
+$viewOnly = $stepDone && !$editAccess;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
+    redirect(route('welcome'), [], 'error', 'Your academic details are in view-only mode. Request edit access from admin.');
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
 
@@ -124,7 +141,8 @@ function dv($data, $key, $default = '') {
 }
 
 $pageTitle  = 'Academic Details - Step 2 - RTTC 2026';
-$currentStep = 2;
+// Use actual overall progress so stepper reflects true completion state
+$currentStep = $prog['current_step'] ?? 2;
 ob_start();
 ?>
 
@@ -134,6 +152,19 @@ ob_start();
     </div>
     <?php include __DIR__ . '/views/partials/flash.php'; ?>
 
+    <?php if ($viewOnly): ?>
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-start gap-3 mb-4" role="alert" style="border-left:4px solid #0d6efd !important;">
+        <i class="bi bi-info-circle-fill fs-5 mt-1 text-primary flex-shrink-0"></i>
+        <div>
+            <strong>Academic Details — View Only</strong><br>
+            <span class="small">Your academic details have already been submitted and <strong>cannot be edited</strong> at this time.
+            If you need to make corrections, please
+            <a href="<?= route('request-query') ?>" class="alert-link fw-semibold">raise a query</a>
+            and the admin may grant you temporary edit access.</span>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if (!empty($errors) && !isset($errors['db'])): ?>
         <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Please fix the highlighted errors below.</div>
     <?php endif; ?>
@@ -141,7 +172,7 @@ ob_start();
         <div class="alert alert-danger"><?= $errors['db'] ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="<?= route('academics') ?>" id="academicForm" novalidate>
+    <form method="POST" action="<?= route('academics') ?>" id="academicForm" novalidate<?= $viewOnly ? ' data-viewonly="1"' : '' ?>>
         <?= SecurityHelper::csrfField() ?>
 
         <!-- ═══════════════════════════════════════════════════════ HSLC ══ -->
@@ -590,10 +621,12 @@ ob_start();
                 <button type="button" id="acadPreviewBtn" class="btn btn-outline-primary btn-lg px-4">
                     <i class="bi bi-eye me-1"></i>Preview
                 </button>
+                <?php if (!$viewOnly): ?>
                 <button type="button" id="acadSaveBtn" class="btn btn-primary btn-lg px-5"
                         <?= empty($data['academic_declaration']) ? 'disabled' : '' ?>>
                     Save & Continue <i class="bi bi-arrow-right ms-1"></i>
                 </button>
+                <?php endif; ?>
             </div>
         </div>
     </form>
@@ -677,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Declaration checkbox → enable/disable Save btn ───────────────────────
     function toggleSaveBtn() {
-        saveBtn.disabled = !declCheck.checked;
+        if (saveBtn) saveBtn.disabled = !declCheck.checked;
     }
     declCheck?.addEventListener('change', toggleSaveBtn);
     toggleSaveBtn();
@@ -1015,6 +1048,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
 }); // end DOMContentLoaded
 </script>
+
+<?php if ($viewOnly): ?>
+<style>
+#academicForm input, #academicForm select, #academicForm textarea,
+#academicForm .form-check-input {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: text;
+}
+#academicForm button:not(#acadPreviewBtn) { pointer-events: none !important; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('academicForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+        }, true);
+    }
+});
+</script>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

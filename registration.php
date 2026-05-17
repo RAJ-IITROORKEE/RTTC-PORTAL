@@ -16,6 +16,26 @@ $stmt->execute();
 $existing = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// ── View-only mode ─────────────────────────────────────────────────────────
+// Determine if admin has granted active edit access
+$now     = date('Y-m-d H:i:s');
+$stmtEA  = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1");
+$stmtEA->bind_param('is', $userId, $now);
+$stmtEA->execute();
+$stmtEA->store_result();
+$editAccess = $stmtEA->num_rows > 0;
+$stmtEA->close();
+
+// View mode when step is already done AND no edit access granted
+$stepDone = !empty($existing);
+$viewOnly = $stepDone && !$editAccess;
+
+// Block any POST in view-only mode (security)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
+    redirect(route('welcome'), [], 'error', 'Your details are in view-only mode. Request edit access from admin.');
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 // Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
@@ -131,7 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Personal Details - Step 1 - RTTC 2026';
-$currentStep = 1;
+// Fetch actual overall progress for the stepper (may be higher than 1 if user revisits)
+$progStmt = $db->prepare("SELECT current_step FROM registration_progress WHERE user_id = ? LIMIT 1");
+$progStmt->bind_param('i', $userId);
+$progStmt->execute();
+$progRow = $progStmt->get_result()->fetch_assoc();
+$progStmt->close();
+$currentStep = $progRow['current_step'] ?? 1;
 ob_start();
 ?>
 
@@ -144,7 +170,20 @@ ob_start();
 
     <?php include __DIR__ . '/views/partials/flash.php'; ?>
 
-    <form method="POST" action="<?= route('registration') ?>" id="personalForm" novalidate>
+    <?php if ($viewOnly): ?>
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-start gap-3 mb-4" role="alert" style="border-left:4px solid #0d6efd !important;">
+        <i class="bi bi-info-circle-fill fs-5 mt-1 text-primary flex-shrink-0"></i>
+        <div>
+            <strong>Personal Details — View Only</strong><br>
+            <span class="small">Your personal details have already been submitted and <strong>cannot be edited</strong> at this time.
+            If you need to make corrections, please
+            <a href="<?= route('request-query') ?>" class="alert-link fw-semibold">raise a query</a>
+            and the admin may grant you temporary edit access.</span>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <form method="POST" action="<?= route('registration') ?>" id="personalForm" novalidate<?= $viewOnly ? ' data-viewonly="1"' : '' ?>>
         <?= SecurityHelper::csrfField() ?>
 
         <!-- Personal Info Card -->
@@ -430,10 +469,12 @@ ob_start();
                 <button type="button" id="previewBtn" class="btn btn-outline-primary btn-lg px-4">
                     <i class="bi bi-eye me-1"></i>Preview
                 </button>
+                <?php if (!$viewOnly): ?>
                 <button type="button" id="openConfirmBtn" class="btn btn-primary btn-lg px-5"
                         <?= empty($data['declaration_confirm']) ? 'disabled' : '' ?>>
                     Save & Continue <i class="bi bi-arrow-right ms-1"></i>
                 </button>
+                <?php endif; ?>
             </div>
         </div>
     </form>
@@ -720,6 +761,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
 }); // end DOMContentLoaded
 </script>
+
+<?php if ($viewOnly): ?>
+<style>
+/* View-only mode: inputs look normal but are non-interactive */
+#personalForm input, #personalForm select, #personalForm textarea,
+#personalForm .form-check-input {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: text;
+}
+#personalForm button:not(#previewBtn) { pointer-events: none !important; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('personalForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+        }, true);
+    }
+});
+</script>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

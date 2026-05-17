@@ -46,6 +46,11 @@
             <i class="bi bi-credit-card-fill"></i><span>Payments</span>
         </a>
 
+        <div class="nav-section-label">Support</div>
+        <a href="<?= route('admin.queries') ?>" class="sidebar-link <?= ($activePage ?? '') === 'queries' ? 'active' : '' ?>">
+            <i class="bi bi-chat-left-dots-fill"></i><span>Student Queries</span>
+        </a>
+
         <div class="nav-section-label">Tools</div>
         <a href="<?= route('admin.notice-documents') ?>" class="sidebar-link <?= ($activePage ?? '') === 'notice-documents' ? 'active' : '' ?>">
             <i class="bi bi-file-earmark-pdf-fill"></i><span>Notice Documents</span>
