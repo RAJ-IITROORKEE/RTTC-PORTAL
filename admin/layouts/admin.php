@@ -45,6 +45,9 @@
         <a href="<?= route('admin.payments') ?>" class="sidebar-link <?= ($activePage ?? '') === 'payments' ? 'active' : '' ?>">
             <i class="bi bi-credit-card-fill"></i><span>Payments</span>
         </a>
+        <a href="<?= route('admin.documents') ?>" class="sidebar-link <?= ($activePage ?? '') === 'documents' ? 'active' : '' ?>">
+            <i class="bi bi-file-earmark-check-fill"></i><span>Documents</span>
+        </a>
 
         <div class="nav-section-label">Support</div>
         <a href="<?= route('admin.queries') ?>" class="sidebar-link <?= ($activePage ?? '') === 'queries' ? 'active' : '' ?>">

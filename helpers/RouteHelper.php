@@ -61,11 +61,15 @@ function route(string $name, array $params = []): string
         'request-query'           => '/request-query',
         'api.submit-query'        => '/api/submit-query',
 
+        // Admin - Documents
+        'admin.documents'         => '/admin/documents',
+
         // Admin - Queries
         'admin.queries'           => '/admin/queries',
         'admin.queries.index'     => '/admin/queries',
         'api.admin.query-reply'   => '/api/admin-query-reply',
         'api.admin.query-action'  => '/api/admin-query-action',
+        'api.admin.delete-user'   => '/api/admin-delete-user',
 
         // Errors
         'error.404'               => '/error/404',
