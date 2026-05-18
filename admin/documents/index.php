@@ -5,7 +5,7 @@ SecurityHelper::requireAdminAuth();
 
 $db = db();
 
-// ── Document category stats (for pie chart) ──────────────────
+// ── All document counts + status summary ──────────────────────
 $statRow = $db->query("
     SELECT
         SUM(photo              IS NOT NULL AND photo              != '') AS photo,
@@ -20,11 +20,23 @@ $statRow = $db->query("
         SUM(obc_ncl_cert       IS NOT NULL AND obc_ncl_cert       != '') AS obc_ncl,
         SUM(gubedcet_admit_card   IS NOT NULL AND gubedcet_admit_card   != '') AS admit,
         SUM(gubedcet_result_sheet IS NOT NULL AND gubedcet_result_sheet != '') AS result,
-        COUNT(*)                                                             AS total_entries
+        COUNT(*)                                                              AS total_entries,
+        SUM(status = 'approved')                                              AS approved_count,
+        SUM(status = 'pending')                                               AS pending_count,
+        SUM(status = 'rejected')                                              AS rejected_count
     FROM documents
 ")->fetch_assoc();
 
-$totalEntries = (int)($statRow['total_entries'] ?? 0);
+$totalEntries  = (int)($statRow['total_entries']   ?? 0);
+$totalFiles    = (int)($statRow['photo']  ?? 0) + (int)($statRow['signature'] ?? 0)
+               + (int)($statRow['hslc']   ?? 0) + (int)($statRow['hsslc']    ?? 0)
+               + (int)($statRow['degree'] ?? 0) + (int)($statRow['masters']  ?? 0)
+               + (int)($statRow['caste']  ?? 0) + (int)($statRow['ews']      ?? 0)
+               + (int)($statRow['pwd']    ?? 0) + (int)($statRow['obc_ncl']  ?? 0)
+               + (int)($statRow['admit']  ?? 0) + (int)($statRow['result']   ?? 0);
+$approved      = (int)($statRow['approved_count']  ?? 0);
+$pending       = (int)($statRow['pending_count']   ?? 0);
+$rejected      = (int)($statRow['rejected_count']  ?? 0);
 
 // ── All users with their document paths ──────────────────────
 $rows = $db->query("
@@ -58,77 +70,121 @@ ob_start();
     <span class="text-muted small">Total document entries: <strong><?= number_format($totalEntries) ?></strong></span>
 </div>
 
-<!-- ===== Stats row ===== -->
-<div class="row g-3 mb-4">
-    <?php
-    $docCategories = [
-        ['key' => 'photo',     'label' => 'Photos',            'icon' => 'person-square',              'color' => 'primary'],
-        ['key' => 'signature', 'label' => 'Signatures',        'icon' => 'pen-fill',                   'color' => 'secondary'],
-        ['key' => 'hslc',      'label' => 'HSLC Marksheets',   'icon' => 'file-earmark-text-fill',     'color' => 'info'],
-        ['key' => 'hsslc',     'label' => 'HSSLC Marksheets',  'icon' => 'file-earmark-text-fill',     'color' => 'info'],
-        ['key' => 'degree',    'label' => 'Degree Marksheets', 'icon' => 'mortarboard-fill',            'color' => 'warning'],
-        ['key' => 'masters',   'label' => "Master's Marksheets",'icon'=> 'mortarboard-fill',            'color' => 'warning'],
-        ['key' => 'caste',     'label' => 'Caste Certificates','icon' => 'file-earmark-medical-fill',  'color' => 'success'],
-        ['key' => 'ews',       'label' => 'EWS Certificates',  'icon' => 'file-earmark-medical-fill',  'color' => 'success'],
-        ['key' => 'pwd',       'label' => 'PWD Certificates',  'icon' => 'file-earmark-medical-fill',  'color' => 'danger'],
-        ['key' => 'obc_ncl',   'label' => 'OBC-NCL Certs.',    'icon' => 'file-earmark-medical-fill',  'color' => 'danger'],
-        ['key' => 'admit',     'label' => 'GUBEDCET Admits',   'icon' => 'card-heading',               'color' => 'purple'],
-        ['key' => 'result',    'label' => 'GUBEDCET Results',  'icon' => 'file-earmark-bar-graph-fill','color' => 'purple'],
-    ];
-    foreach ($docCategories as $dc): ?>
-    <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100 text-center py-3 px-2">
-            <i class="bi bi-<?= $dc['icon'] ?> fs-2 mb-1 text-<?= $dc['color'] ?>"></i>
-            <div class="fw-bold fs-5"><?= (int)($statRow[$dc['key']] ?? 0) ?></div>
-            <div class="text-muted" style="font-size:.72rem;"><?= $dc['label'] ?></div>
+<!-- ===== 5 Grouped Stats ===== -->
+<div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+
+    <!-- Total Entries -->
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="min-height:100px;">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
+                     style="width:48px;height:48px;min-width:48px;">
+                    <i class="bi bi-people-fill fs-4 text-primary"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold fs-4 lh-1 mb-1"><?= number_format($totalEntries) ?></div>
+                    <div class="small fw-semibold text-truncate">Students w/ Docs</div>
+                    <div class="text-muted" style="font-size:.7rem;">Document rows in DB</div>
+                </div>
+            </div>
         </div>
     </div>
-    <?php endforeach; ?>
+
+    <!-- Total Files Uploaded -->
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="min-height:100px;">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-info bg-opacity-10"
+                     style="width:48px;height:48px;min-width:48px;">
+                    <i class="bi bi-files fs-4 text-info"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold fs-4 lh-1 mb-1"><?= number_format($totalFiles) ?></div>
+                    <div class="small fw-semibold text-truncate">Total Files</div>
+                    <div class="text-muted" style="font-size:.7rem;">All uploads combined</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approved -->
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="min-height:100px;">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-success bg-opacity-10"
+                     style="width:48px;height:48px;min-width:48px;">
+                    <i class="bi bi-patch-check-fill fs-4 text-success"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold fs-4 lh-1 mb-1"><?= number_format($approved) ?></div>
+                    <div class="small fw-semibold text-truncate">Approved</div>
+                    <div class="text-muted" style="font-size:.7rem;">Documents verified</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending -->
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="min-height:100px;">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-warning bg-opacity-10"
+                     style="width:48px;height:48px;min-width:48px;">
+                    <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold fs-4 lh-1 mb-1"><?= number_format($pending) ?></div>
+                    <div class="small fw-semibold text-truncate">Pending Review</div>
+                    <div class="text-muted" style="font-size:.7rem;">Awaiting verification</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejected -->
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="min-height:100px;">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-danger bg-opacity-10"
+                     style="width:48px;height:48px;min-width:48px;">
+                    <i class="bi bi-x-circle-fill fs-4 text-danger"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold fs-4 lh-1 mb-1"><?= number_format($rejected) ?></div>
+                    <div class="small fw-semibold text-truncate">Rejected</div>
+                    <div class="text-muted" style="font-size:.7rem;">Docs rejected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- ===== Pie Chart + DataTable ===== -->
-<div class="row g-4 mb-4">
-    <!-- Pie chart -->
-    <div class="col-lg-4">
+<!-- ===== Category Certificates Distribution Pie ===== -->
+<div class="row g-4 mb-4 justify-content-center">
+    <div class="col-lg-5">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 pt-3">
-                <h6 class="fw-bold mb-0">
-                    <i class="bi bi-pie-chart-fill me-2 text-primary"></i>Category Distribution
-                </h6>
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-pie-chart-fill me-2 text-primary"></i>Category Certificate Distribution
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Caste, EWS, PWD &amp; OBC-NCL certificates submitted</p>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-center py-2">
-                <div id="pieChart" style="width:100%;height:300px;"></div>
+            <div class="card-body py-2">
+                <div id="certPieChart" style="width:100%;height:320px;"></div>
             </div>
         </div>
     </div>
-    <!-- Quick totals -->
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 pt-3">
-                <h6 class="fw-bold mb-0">
-                    <i class="bi bi-info-circle me-2 text-primary"></i>Upload Summary
-                </h6>
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-bar-chart-fill me-2 text-primary"></i>Document Status Overview
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Approval status breakdown across all submitted documents</p>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <?php foreach ($docCategories as $dc): $cnt = (int)($statRow[$dc['key']] ?? 0); ?>
-                    <div class="col-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-<?= $dc['icon'] ?> text-<?= $dc['color'] ?> fs-5 flex-shrink-0"></i>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted"><?= $dc['label'] ?></small>
-                                    <small class="fw-bold"><?= $cnt ?> / <?= $totalEntries ?></small>
-                                </div>
-                                <div class="progress" style="height:5px;">
-                                    <div class="progress-bar bg-<?= $dc['color'] ?>"
-                                         style="width:<?= $totalEntries ? round($cnt / $totalEntries * 100) : 0 ?>%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
+            <div class="card-body py-2">
+                <div id="statusDonutChart" style="width:100%;height:320px;"></div>
             </div>
         </div>
     </div>
@@ -211,13 +267,20 @@ ob_start();
 <?php
 $content = ob_get_clean();
 
-// Build pie data in PHP
-$pieJson = json_encode(array_map(fn($dc) => [
-    'name'  => $dc['label'],
-    'value' => (int)($statRow[$dc['key']] ?? 0),
-], $docCategories));
+// Category certs pie data
+$certPieJson = json_encode([
+    ['name' => 'Caste Certificate', 'value' => (int)($statRow['caste']   ?? 0)],
+    ['name' => 'EWS Certificate',   'value' => (int)($statRow['ews']     ?? 0)],
+    ['name' => 'PWD Certificate',   'value' => (int)($statRow['pwd']     ?? 0)],
+    ['name' => 'OBC-NCL Cert.',     'value' => (int)($statRow['obc_ncl'] ?? 0)],
+]);
 
-$baseUrl = rtrim(BASE_URL, '/');
+// Status donut data
+$statusDonutJson = json_encode([
+    ['name' => 'Approved', 'value' => $approved],
+    ['name' => 'Pending',  'value' => $pending],
+    ['name' => 'Rejected', 'value' => $rejected],
+]);
 
 $extraFoot = <<<JS
 <!-- DataTables CSS -->
@@ -227,33 +290,46 @@ $extraFoot = <<<JS
 <!-- ECharts -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
-// ===== Pie Chart =====
-(function () {
-    var chart = echarts.init(document.getElementById('pieChart'));
-    var data  = {$pieJson};
-    chart.setOption({
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-        legend: { bottom: 0, type: 'scroll', textStyle: { fontSize: 11 } },
-        series: [{
-            type: 'pie',
-            radius: ['38%', '70%'],
-            center: ['50%', '44%'],
-            avoidLabelOverlap: true,
-            itemStyle: { borderRadius: 6, borderWidth: 2, borderColor: '#fff' },
-            label: { show: false },
-            emphasis: {
-                label: { show: true, fontSize: 13, fontWeight: 'bold' }
-            },
-            data: data
-        }]
-    });
-    window.addEventListener('resize', function () { chart.resize(); });
-})();
+// ===== Category Certificates Pie Chart =====
+echarts.init(document.getElementById('certPieChart')).setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { orient: 'vertical', left: 'left', textStyle: { fontSize: 12 } },
+    color: ['#4361ee', '#06d6a0', '#f77f00', '#e63946'],
+    series: [{
+        name: 'Category Certificates',
+        type: 'pie',
+        radius: '55%',
+        center: ['62%', '50%'],
+        data: {$certPieJson},
+        emphasis: {
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.4)' }
+        },
+        itemStyle: { borderRadius: 5, borderWidth: 2, borderColor: '#fff' },
+        label: { show: true, formatter: '{b}\\n{c}', fontSize: 11 }
+    }]
+});
+
+// ===== Document Status Donut =====
+echarts.init(document.getElementById('statusDonutChart')).setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { top: '5%', left: 'center', textStyle: { fontSize: 12 } },
+    color: ['#06d6a0', '#f4a261', '#e63946'],
+    series: [{
+        name: 'Document Status',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '58%'],
+        avoidLabelOverlap: false,
+        label: { show: false, position: 'center' },
+        emphasis: { label: { show: true, fontSize: 18, fontWeight: 'bold' } },
+        labelLine: { show: false },
+        data: {$statusDonutJson}
+    }]
+});
 
 // ===== DataTable =====
-var docsTable;
 $(document).ready(function () {
-    docsTable = $('#docsTable').DataTable({
+    $('#docsTable').DataTable({
         pageLength: 10,
         lengthMenu: [[5, 10, 25, 50, -1], ['5', '10', '25', '50', 'All']],
         scrollX: true,
@@ -263,7 +339,7 @@ $(document).ready(function () {
             info:       'Showing _START_ to _END_ of _TOTAL_ students'
         }
     });
-});
+}); // end $(document).ready
 
 // ===== CSV Export with full document URLs =====
 document.getElementById('csvExportBtn').addEventListener('click', function () {
@@ -280,7 +356,6 @@ document.getElementById('csvExportBtn').addEventListener('click', function () {
         var cells = tr.querySelectorAll('td');
         var row   = [];
         cells.forEach(function (td, idx) {
-            // For doc link columns (index 3–14): use data-export-url
             if (idx >= 3 && idx <= 14) {
                 row.push(td.dataset.exportUrl || '');
             } else {
@@ -292,10 +367,9 @@ document.getElementById('csvExportBtn').addEventListener('click', function () {
 
     var csv = rows.map(function (r) {
         return r.map(function (cell) {
-            var s = (cell + '').replace(/"/g, '""');
-            return '"' + s + '"';
+            return '"' + (cell + '').replace(/"/g, '""') + '"';
         }).join(',');
-    }).join('\\r\\n');
+    }).join('\r\n');
 
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     var url  = URL.createObjectURL(blob);

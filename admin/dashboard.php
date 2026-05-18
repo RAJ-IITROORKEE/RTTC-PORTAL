@@ -72,16 +72,39 @@ foreach ($cards as $card): ?>
 <?php endforeach; ?>
 </div>
 
-<!-- ===== Application Progress Funnel (ECharts) ===== -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white border-0 pt-3 pb-0">
-        <h6 class="fw-bold mb-0">
-            <i class="bi bi-bar-chart-steps me-2 text-primary"></i>Application Progress Funnel
-        </h6>
+<!-- ===== Charts Row: Progress Pie + Payment Donut ===== -->
+<div class="row g-4 mb-4">
+
+    <!-- Application Progress Distribution -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-pie-chart-fill me-2 text-primary"></i>Application Progress
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Distribution of applicants across registration steps</p>
+            </div>
+            <div class="card-body py-2">
+                <div id="progressPieChart" style="height:350px;"></div>
+            </div>
+        </div>
     </div>
-    <div class="card-body py-2">
-        <div id="funnelChart" style="height:330px;"></div>
+
+    <!-- Payment Status Donut -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-credit-card-2-front-fill me-2 text-success"></i>Payment Status
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Breakdown of payment completion across all applicants</p>
+            </div>
+            <div class="card-body py-2">
+                <div id="paymentDonutChart" style="height:350px;"></div>
+            </div>
+        </div>
     </div>
+
 </div>
 
 <!-- ===== Registrations DataTable ===== -->
@@ -196,13 +219,17 @@ foreach ($cards as $card): ?>
 <?php
 $content = ob_get_clean();
 
-// PHP data for JS (heredoc to allow interpolation)
-$funnelJson  = json_encode([
-    ['name' => 'Signed Up',     'value' => $stats['total_users']],
-    ['name' => 'Personal Done', 'value' => $stats['personal_done']],
-    ['name' => 'Academic Done', 'value' => $stats['academic_done']],
-    ['name' => 'Docs Uploaded', 'value' => $stats['docs_done']],
+// PHP data for JS (heredoc allows interpolation)
+$progressPieJson = json_encode([
+    ['name' => 'Not Started',   'value' => max(0, $stats['total_users']    - $stats['personal_done'])],
+    ['name' => 'Personal Done', 'value' => max(0, $stats['personal_done']  - $stats['academic_done'])],
+    ['name' => 'Academic Done', 'value' => max(0, $stats['academic_done']  - $stats['docs_done'])],
+    ['name' => 'Docs Uploaded', 'value' => max(0, $stats['docs_done']      - $stats['payments_done'])],
     ['name' => 'Payment Done',  'value' => $stats['payments_done']],
+]);
+$paymentDonutJson = json_encode([
+    ['name' => 'Payment Done', 'value' => $stats['apps_with_pay']],
+    ['name' => 'No Payment',   'value' => max(0, $stats['total_users'] - $stats['apps_with_pay'])],
 ]);
 $deleteUrl = route('api.admin.delete-user');
 
@@ -215,50 +242,52 @@ $extraFoot = <<<JS
 <!-- ECharts -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
-// ===== ECharts Funnel =====
-(function () {
-    var chart = echarts.init(document.getElementById('funnelChart'));
-    var data  = {$funnelJson};
-    var palette = ['#4361ee','#4cc9f0','#f77f00','#7209b7','#06d6a0'];
+$(document).ready(function () {
 
-    chart.setOption({
-        tooltip: {
-            trigger: 'item',
-            formatter: function(p) {
-                return '<b>' + p.name + '</b>: ' + p.value;
-            }
-        },
-        color: palette,
+    // ===== Application Progress Pie =====
+    echarts.init(document.getElementById('progressPieChart')).setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { orient: 'vertical', left: 'left', textStyle: { fontSize: 12 } },
+        color: ['#adb5bd', '#4cc9f0', '#4361ee', '#f77f00', '#06d6a0'],
         series: [{
-            type: 'funnel',
-            left: '8%', right: '8%',
-            top: 10, bottom: 10,
-            min: 0,
-            max: data[0] ? data[0].value || 1 : 1,
-            minSize: '5%', maxSize: '100%',
-            sort: 'none',
-            gap: 5,
-            label: {
-                show: true,
-                position: 'inside',
-                formatter: function(p) { return p.name + '\\n' + p.value; },
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 600,
-                lineHeight: 20
-            },
-            itemStyle: { borderWidth: 0, borderRadius: 6 },
+            name: 'Application Progress',
+            type: 'pie',
+            radius: '55%',
+            center: ['62%', '50%'],
+            data: {$progressPieJson},
             emphasis: {
-                itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,.3)' }
+                itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: 'rgba(0,0,0,0.4)'
+                }
             },
-            data: data
+            itemStyle: { borderRadius: 5, borderWidth: 2, borderColor: '#fff' },
+            label: { show: true, formatter: '{b}\\n{c}', fontSize: 11 }
         }]
     });
-    window.addEventListener('resize', function () { chart.resize(); });
-})();
 
-// ===== DataTable =====
-$(document).ready(function () {
+    // ===== Payment Status Donut =====
+    echarts.init(document.getElementById('paymentDonutChart')).setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { top: '5%', left: 'center', textStyle: { fontSize: 12 } },
+        color: ['#06d6a0', '#e63946'],
+        series: [{
+            name: 'Payment Status',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '58%'],
+            avoidLabelOverlap: false,
+            label: { show: false, position: 'center' },
+            emphasis: {
+                label: { show: true, fontSize: 18, fontWeight: 'bold' }
+            },
+            labelLine: { show: false },
+            data: {$paymentDonutJson}
+        }]
+    });
+
+    // ===== DataTable =====
     $('#recentTable').DataTable({
         order: [[6, 'desc']],
         pageLength: 10,

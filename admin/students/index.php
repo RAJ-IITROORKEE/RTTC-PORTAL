@@ -103,14 +103,16 @@ ob_start();
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
+                        <th>App ID</th><th>Name</th><th>Email</th><th>Phone</th>
                         <th>Verified</th><th>Step</th><th>Submitted</th><th>Registered</th><th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $i = $offset + 1; while ($row = $rows->fetch_assoc()): ?>
+                    <?php $i = $offset + 1; while ($row = $rows->fetch_assoc()):
+                        $appId = 'RTTC-' . str_pad($row['id'], 5, '0', STR_PAD_LEFT);
+                    ?>
                     <tr>
-                        <td><?= $i++ ?></td>
+                        <td class="font-monospace small fw-semibold"><?= $appId ?></td>
                         <td class="fw-semibold"><?= htmlspecialchars($row['username']) ?></td>
                         <td><?= htmlspecialchars($row['email']) ?></td>
                         <td><?= htmlspecialchars($row['phone']) ?></td>
