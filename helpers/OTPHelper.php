@@ -118,34 +118,62 @@ class OTPHelper
         return self::sendViaPHPMailer($to, $otp, $purpose);
     }
 
-    private static function sendViaPHPMailer(string $to, string $otp, string $purpose): true|string
-    {
-        try {
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = SMTP_HOST;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = SMTP_USERNAME;
-            $mail->Password   = SMTP_PASSWORD;
-            $mail->SMTPSecure = (strtolower(SMTP_ENCRYPTION) === 'ssl')
-                                ? PHPMailer::ENCRYPTION_SMTPS
-                                : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = (int) SMTP_PORT;
-            $mail->CharSet    = 'UTF-8';
-            $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
-            $mail->addAddress($to);
-            $mail->isHTML(true);
-            $mail->Subject = self::subject($purpose);
-            $mail->Body    = self::body($otp, $purpose);
-            $mail->AltBody = "Your OTP is: $otp (valid for 10 minutes)";
-            $mail->send();
-            return true;
-        } catch (\Exception $e) {
-            error_log('OTP mail error: ' . $e->getMessage());
-            // Don't expose SMTP details to user
-            return 'Failed to send OTP email. Please try again later.';
-        }
-    }
+     private static function sendViaPHPMailer(string $to, string $otp, string $purpose): true|string
+     {
+         $maxRetries = 3;
+         $retryDelay = 1; // seconds
+         $lastError = '';
+
+         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+             try {
+                 $mail = new PHPMailer(true);
+                 $mail->isSMTP();
+                 $mail->Host       = SMTP_HOST;
+                 $mail->SMTPAuth   = true;
+                 $mail->Username   = SMTP_USERNAME;
+                 $mail->Password   = SMTP_PASSWORD;
+                 $mail->SMTPSecure = (strtolower(SMTP_ENCRYPTION) === 'ssl')
+                                     ? PHPMailer::ENCRYPTION_SMTPS
+                                     : PHPMailer::ENCRYPTION_STARTTLS;
+                 $mail->Port       = (int) SMTP_PORT;
+                 $mail->Timeout    = 10; // Connection timeout
+                 $mail->CharSet    = 'UTF-8';
+                 $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+                 $mail->addAddress($to);
+                 $mail->isHTML(true);
+                 $mail->Subject = self::subject($purpose);
+                 $mail->Body    = self::body($otp, $purpose);
+                 $mail->AltBody = "Your OTP is: $otp (valid for 10 minutes)";
+                 $mail->send();
+                 return true;
+
+             } catch (\Exception $e) {
+                 $lastError = $e->getMessage();
+                 error_log("OTP mail error (attempt $attempt/$maxRetries): " . $lastError);
+
+                 // Retry on temporary failures (don't retry on permanent errors like invalid email)
+                 $isTempError = (
+                     strpos($lastError, 'Temporary lookup failure') !== false ||
+                     strpos($lastError, 'Connection refused') !== false ||
+                     strpos($lastError, 'Connection timed out') !== false ||
+                     strpos($lastError, 'DNS') !== false ||
+                     strpos($lastError, 'SMTP') !== false && strpos($lastError, '550') === false
+                 );
+
+                 if ($attempt < $maxRetries && $isTempError) {
+                     sleep($retryDelay);
+                     $retryDelay *= 2; // Exponential backoff
+                     continue;
+                 }
+
+                 // Permanent error or last attempt
+                 break;
+             }
+         }
+
+         // Don't expose SMTP details to user
+         return 'Failed to send OTP email. Please try again later.';
+     }
 
     private static function subject(string $purpose): string
     {
