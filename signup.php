@@ -73,11 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $otp = trim($_POST['otp'] ?? '');
         $signupData = $_SESSION['signup_data'] ?? null;
 
+        // Validate OTP format (must be 6 digits)
+        if (!preg_match('/^\d{6}$/', $otp)) {
+            $errors['otp'] = 'OTP must be 6 digits.';
+        }
+
         if (!$signupData) {
             SessionHelper::setFlash('error', 'Session expired. Please sign up again.');
             unset($_SESSION['signup_step']);
             redirect(route('signup'));
         }
+
+        if (!empty($errors)) {
+            // Stay on OTP verification page with error
+            $_SESSION['signup_step'] = 2;
+        } else {
 
         $result = OTPHelper::verifyOTP($signupData['email'], $otp, 'signup');
         if ($result['success']) {
@@ -103,8 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $errors['db'] = 'Database error. Please try again.';
             }
-        } else {
-            $errors['otp'] = $result['message'];
+         } else {
+             $errors['otp'] = $result['message'];
+         }
         }
     } elseif ($action === 'resend_otp') {
         $signupData = $_SESSION['signup_data'] ?? null;

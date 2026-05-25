@@ -142,7 +142,8 @@ class OTPHelper
             return true;
         } catch (\Exception $e) {
             error_log('OTP mail error: ' . $e->getMessage());
-            return 'Failed to send OTP email: ' . $e->getMessage();
+            // Don't expose SMTP details to user
+            return 'Failed to send OTP email. Please try again later.';
         }
     }
 
