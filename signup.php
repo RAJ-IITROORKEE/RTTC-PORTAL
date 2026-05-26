@@ -239,31 +239,146 @@ ob_start();
                     <?php else: ?>
                     <!-- OTP VERIFICATION FORM -->
                     <?php $signupEmail = $_SESSION['signup_data']['email'] ?? ''; ?>
-                    <p class="text-center text-muted mb-4">
-                        OTP sent to <strong><?= htmlspecialchars($signupEmail) ?></strong>
-                    </p>
+
+                    <style>
+                    /* ── OTP Box UI ── */
+                    .otp-label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        color: #6c757d;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        margin-bottom: 0.75rem;
+                    }
+                    .otp-email-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        background: #f0f4ff;
+                        border: 1px solid #d0dbff;
+                        border-radius: 20px;
+                        padding: 5px 14px;
+                        font-size: 0.875rem;
+                        font-weight: 500;
+                        color: #3b5bdb;
+                        margin-bottom: 1.5rem;
+                    }
+                    .otp-boxes-wrapper {
+                        display: flex;
+                        gap: 10px;
+                        justify-content: center;
+                        margin-bottom: 0.5rem;
+                    }
+                    .otp-box {
+                        width: 50px;
+                        height: 58px;
+                        border: 2px solid #dee2e6;
+                        border-radius: 12px;
+                        text-align: center;
+                        font-size: 1.6rem;
+                        font-weight: 700;
+                        color: #212529;
+                        background: #fff;
+                        outline: none;
+                        transition: border-color 0.18s, box-shadow 0.18s, background 0.18s, transform 0.12s;
+                        caret-color: transparent;
+                        -moz-appearance: textfield;
+                    }
+                    .otp-box::-webkit-outer-spin-button,
+                    .otp-box::-webkit-inner-spin-button { -webkit-appearance: none; }
+                    .otp-box:focus {
+                        border-color: #4361ee;
+                        box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+                        background: #f5f7ff;
+                        transform: translateY(-2px);
+                    }
+                    .otp-box.filled {
+                        border-color: #4361ee;
+                        background: #f5f7ff;
+                    }
+                    .otp-box.is-invalid-box {
+                        border-color: #dc3545 !important;
+                        background: #fff5f5 !important;
+                        box-shadow: 0 0 0 3px rgba(220,53,69,0.12) !important;
+                        animation: shake 0.35s ease;
+                    }
+                    @keyframes shake {
+                        0%,100% { transform: translateX(0); }
+                        20%      { transform: translateX(-5px); }
+                        40%      { transform: translateX(5px); }
+                        60%      { transform: translateX(-4px); }
+                        80%      { transform: translateX(4px); }
+                    }
+                    .otp-error-msg {
+                        color: #dc3545;
+                        font-size: 0.82rem;
+                        text-align: center;
+                        margin-top: 6px;
+                        min-height: 1.1em;
+                    }
+                    .otp-timer-row {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 6px;
+                        font-size: 0.85rem;
+                        color: #6c757d;
+                        margin: 0.75rem 0 1.25rem;
+                    }
+                    .otp-timer-row #countdown {
+                        font-weight: 700;
+                        color: #4361ee;
+                        font-variant-numeric: tabular-nums;
+                        min-width: 2.8rem;
+                        display: inline-block;
+                    }
+                    .otp-timer-row #countdown.expired { color: #dc3545; }
+                    .otp-timer-row .timer-icon { font-size: 0.9rem; }
+                    /* Paste hint */
+                    .otp-paste-hint {
+                        font-size: 0.78rem;
+                        color: #adb5bd;
+                        text-align: center;
+                        margin-bottom: 0.25rem;
+                    }
+                    </style>
+
+                    <div class="text-center">
+                        <span class="otp-email-badge">
+                            <i class="bi bi-envelope-check-fill"></i>
+                            <?= htmlspecialchars($signupEmail) ?>
+                        </span>
+                    </div>
 
                     <form method="POST" action="<?= route('signup') ?>" id="otpForm">
                         <?= SecurityHelper::csrfField() ?>
                         <input type="hidden" name="action" value="verify_otp">
+                        <!-- Hidden input that carries the assembled 6-digit OTP to the backend (unchanged field name) -->
+                        <input type="hidden" name="otp" id="otpHidden">
 
-                        <div class="mb-3">
-                            <label for="otp" class="form-label">Enter OTP <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control text-center otp-input <?= isset($errors['otp']) ? 'is-invalid' : '' ?>"
-                                   id="otp" name="otp"
-                                   placeholder="6-digit OTP" maxlength="6" required
-                                   style="font-size:1.5rem; letter-spacing:0.4rem;">
-                            <?php if (isset($errors['otp'])): ?>
-                                <div class="invalid-feedback"><?= $errors['otp'] ?></div>
-                            <?php endif; ?>
+                        <div class="mb-1">
+                            <div class="otp-label text-center">Enter verification code</div>
+                            <div class="otp-boxes-wrapper" id="otpBoxesWrapper">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" data-index="0">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" data-index="1">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" data-index="2">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" data-index="3">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" data-index="4">
+                                <input class="otp-box <?= isset($errors['otp']) ? 'is-invalid-box' : '' ?>" type="text" inputmode="numeric" maxlength="1" data-index="5">
+                            </div>
+                            <div class="otp-error-msg" id="otpErrorMsg">
+                                <?= isset($errors['otp']) ? htmlspecialchars($errors['otp']) : '' ?>
+                            </div>
+                            <p class="otp-paste-hint">You can paste your OTP directly</p>
                         </div>
 
-                        <div id="otpTimer" class="text-center text-muted small mb-3">
+                        <div class="otp-timer-row" id="otpTimer">
+                            <i class="bi bi-clock timer-icon"></i>
                             OTP expires in <span id="countdown">10:00</span>
                         </div>
 
                         <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg" id="verifyBtn">
                                 <i class="bi bi-check-circle me-2"></i>Verify OTP
                             </button>
                         </div>
@@ -320,23 +435,131 @@ document.getElementById('password')?.addEventListener('input', function() {
     el.innerHTML = val ? `<small style="color:${colors[strength]}">${labels[strength]}</small>` : '';
 });
 
-// OTP countdown timer
+// ── OTP 6-box logic ──
 <?php if ($step === 2): ?>
-let timeLeft = 600;
-const countdown = document.getElementById('countdown');
-const timer = setInterval(() => {
-    if (timeLeft <= 0) { clearInterval(timer); countdown.textContent = 'Expired'; return; }
-    const m = Math.floor(timeLeft / 60);
-    const s = timeLeft % 60;
-    countdown.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-    timeLeft--;
-}, 1000);
-<?php endif; ?>
+(function () {
+    const boxes     = Array.from(document.querySelectorAll('.otp-box'));
+    const hidden    = document.getElementById('otpHidden');
+    const form      = document.getElementById('otpForm');
+    const errorMsg  = document.getElementById('otpErrorMsg');
 
-// Only allow numbers in OTP
-document.getElementById('otp')?.addEventListener('input', function() {
-    this.value = this.value.replace(/[^0-9]/g, '');
-});
+    // Helper: sync hidden input with box values
+    function syncHidden() {
+        hidden.value = boxes.map(b => b.value).join('');
+    }
+
+    // Mark filled state
+    function updateFilled(box) {
+        box.classList.toggle('filled', box.value !== '');
+    }
+
+    // Focus first empty box or last
+    function focusNext(currentIndex) {
+        const next = boxes[currentIndex + 1];
+        if (next) next.focus();
+    }
+    function focusPrev(currentIndex) {
+        const prev = boxes[currentIndex - 1];
+        if (prev) prev.focus();
+    }
+
+    boxes.forEach((box, i) => {
+        // Allow only digits on keydown
+        box.addEventListener('keydown', function (e) {
+            // Backspace: clear current or go back
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                if (this.value) {
+                    this.value = '';
+                    updateFilled(this);
+                    syncHidden();
+                } else {
+                    focusPrev(i);
+                    if (boxes[i - 1]) {
+                        boxes[i - 1].value = '';
+                        updateFilled(boxes[i - 1]);
+                        syncHidden();
+                    }
+                }
+                return;
+            }
+            // Arrow keys
+            if (e.key === 'ArrowLeft')  { e.preventDefault(); focusPrev(i); return; }
+            if (e.key === 'ArrowRight') { e.preventDefault(); focusNext(i); return; }
+            // Block non-digit keys (except tab, ctrl combos for paste)
+            if (!/^\d$/.test(e.key) && !e.ctrlKey && !e.metaKey && e.key !== 'Tab') {
+                e.preventDefault();
+            }
+        });
+
+        box.addEventListener('input', function () {
+            // Sanitise: keep only last digit in case browser sneaks two chars
+            this.value = this.value.replace(/[^0-9]/g, '').slice(-1);
+            updateFilled(this);
+            syncHidden();
+            if (this.value) focusNext(i);
+        });
+
+        // Handle paste on any box: distribute digits across all boxes
+        box.addEventListener('paste', function (e) {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData)
+                .getData('text')
+                .replace(/[^0-9]/g, '')
+                .slice(0, 6);
+            if (!pasted) return;
+            pasted.split('').forEach((ch, idx) => {
+                if (boxes[idx]) {
+                    boxes[idx].value = ch;
+                    updateFilled(boxes[idx]);
+                }
+            });
+            syncHidden();
+            // Focus the box after the last pasted digit
+            const nextFocus = Math.min(pasted.length, 5);
+            boxes[nextFocus].focus();
+        });
+
+        // Select all text on focus so re-typing a digit is effortless
+        box.addEventListener('focus', function () { this.select(); });
+    });
+
+    // Form submit: validate all 6 boxes filled
+    form.addEventListener('submit', function (e) {
+        syncHidden();
+        const val = hidden.value;
+        if (!/^\d{6}$/.test(val)) {
+            e.preventDefault();
+            // Shake all boxes and show error
+            boxes.forEach(b => {
+                b.classList.add('is-invalid-box');
+                b.addEventListener('input', () => b.classList.remove('is-invalid-box'), { once: true });
+            });
+            errorMsg.textContent = 'Please enter all 6 digits.';
+            boxes.find(b => b.value === '')?.focus();
+        }
+    });
+
+    // Auto-focus first box on load
+    boxes[0]?.focus();
+
+    // OTP countdown timer
+    let timeLeft = 600;
+    const countdown = document.getElementById('countdown');
+    const timer = setInterval(() => {
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            countdown.textContent = 'Expired';
+            countdown.classList.add('expired');
+            return;
+        }
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        countdown.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        timeLeft--;
+    }, 1000);
+})();
+<?php endif; ?>
 </script>
 
 <?php

@@ -12,8 +12,8 @@ $prefillPhone = '';
 if ($isLoggedIn) {
     $userId = SessionHelper::get('user_id');
 
-    // Always get email + username from users table
-    $stmt = $conn->prepare("SELECT username, email FROM users WHERE id = ? LIMIT 1");
+    // Get email, username, and phone from users table
+    $stmt = $conn->prepare("SELECT username, email, phone FROM users WHERE id = ? LIMIT 1");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $uRow = $stmt->get_result()->fetch_assoc();
@@ -21,6 +21,7 @@ if ($isLoggedIn) {
     if ($uRow) {
         $prefillEmail = $uRow['email'];
         $prefillName  = $uRow['username'];
+        $prefillPhone = $uRow['phone'] ?? '';
     }
 
     // Override name/phone with personal_details if filled
@@ -31,7 +32,7 @@ if ($isLoggedIn) {
     $stmt->close();
     if ($pRow) {
         $prefillName  = trim($pRow['firstname'] . ' ' . $pRow['middlename'] . ' ' . $pRow['lastname']);
-        $prefillPhone = $pRow['emergency_contact'] ?? '';
+        $prefillPhone = $pRow['emergency_contact'] ?? $prefillPhone;
     }
 }
 
@@ -136,10 +137,11 @@ ob_start();
             </div>
 
             <div class="d-grid">
-              <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="submitBtn">
+              <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="submitBtn" disabled>
                 <span class="btn-text"><i class="bi bi-send me-2"></i>Submit Query</span>
                 <span class="spinner-border spinner-border-sm d-none" role="status"></span>
               </button>
+              <small class="text-muted mt-2" id="validationMsg">Fill all required fields correctly to enable submission</small>
             </div>
 
           </form>
@@ -191,21 +193,117 @@ $extraFoot = <<<JS
   const msgArea      = document.getElementById('qMessage');
   const msgCount     = document.getElementById('msgCount');
   const resubmitBtn  = document.getElementById('resubmitBtn');
+  const validationMsg = document.getElementById('validationMsg');
 
   let isSubmitting = false;
+
+  const requiredFields = [
+    { id: 'qName', type: 'text', minLen: 1 },
+    { id: 'qEmail', type: 'email', minLen: 1 },
+    { id: 'qSubject', type: 'select', minLen: 1 },
+    { id: 'qMessage', type: 'textarea', minLen: 20 }
+  ];
 
   // Character counter
   msgArea.addEventListener('input', function () {
     msgCount.textContent = msgArea.value.length;
+    validateForm();
   });
+
+  // Real-time validation on all required fields
+  requiredFields.forEach(function (field) {
+    const el = document.getElementById(field.id);
+    if (el) {
+      el.addEventListener('input', validateForm);
+      el.addEventListener('change', validateForm);
+      el.addEventListener('blur', validateForm);
+    }
+  });
+
+  function validateField(field) {
+    const el = document.getElementById(field.id);
+    if (!el) return false;
+
+    let value = el.value.trim();
+
+    if (field.type === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+      }
+    } else if (field.type === 'select') {
+      if (value === '' || value === null) {
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+      }
+    } else if (field.minLen > 0) {
+      if (value.length < field.minLen) {
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+      }
+    }
+
+    el.classList.remove('is-invalid');
+    el.classList.add('is-valid');
+    return true;
+  }
+
+  function validateForm() {
+    let allValid = true;
+
+    requiredFields.forEach(function (field) {
+      const isValid = validateField(field);
+      if (!isValid) allValid = false;
+    });
+
+    // Optional: validate phone if filled
+    const phoneEl = document.getElementById('qPhone');
+    if (phoneEl && phoneEl.value.trim() !== '') {
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phoneEl.value.trim())) {
+        phoneEl.classList.add('is-invalid');
+        phoneEl.classList.remove('is-valid');
+        allValid = false;
+      } else {
+        phoneEl.classList.remove('is-invalid');
+        phoneEl.classList.add('is-valid');
+      }
+    } else if (phoneEl) {
+      phoneEl.classList.remove('is-invalid', 'is-valid');
+    }
+
+    if (allValid) {
+      submitBtn.disabled = false;
+      validationMsg.textContent = '✓ Form ready to submit';
+      validationMsg.classList.add('text-success');
+      validationMsg.classList.remove('text-muted');
+    } else {
+      submitBtn.disabled = true;
+      validationMsg.textContent = 'Fill all required fields correctly to enable submission';
+      validationMsg.classList.remove('text-success');
+      validationMsg.classList.add('text-muted');
+    }
+
+    return allValid;
+  }
 
   // "Submit Another Query" link
   resubmitBtn.addEventListener('click', function () {
     successPanel.style.setProperty('display', 'none', 'important');
     formWrap.style.display = '';
     form.reset();
-    form.classList.remove('was-validated');
     msgCount.textContent = '0';
+    requiredFields.forEach(function (field) {
+      const el = document.getElementById(field.id);
+      if (el) {
+        el.classList.remove('is-valid', 'is-invalid');
+      }
+    });
+    validateForm();
   });
 
   function unlockBtn() {
@@ -225,11 +323,7 @@ $extraFoot = <<<JS
     e.preventDefault();
     if (isSubmitting) return;
 
-    // Always clear previous validation state before re-checking
-    form.classList.remove('was-validated');
-
-    if (!form.checkValidity()) {
-      form.classList.add('was-validated');
+    if (!validateForm()) {
       return;
     }
 
@@ -237,10 +331,10 @@ $extraFoot = <<<JS
     btnText.classList.add('d-none');
     spinner.classList.remove('d-none');
     submitBtn.disabled = true;
+    validationMsg.textContent = 'Submitting...';
 
-    // 15-second timeout — prevents infinite "Please wait..."
     var controller = new AbortController();
-    var timeoutId  = setTimeout(function () { controller.abort(); }, 15000);
+    var timeoutId  = setTimeout(function () { controller.abort(); }, 30000);
 
     fetch('{$submitQueryUrl}', {
       method: 'POST',
@@ -258,6 +352,8 @@ $extraFoot = <<<JS
           successPanel.style.removeProperty('display');
         } else {
           showError(res.message || 'Something went wrong. Please try again.');
+          unlockBtn();
+          validateForm();
         }
       })
       .catch(function (err) {
@@ -267,9 +363,13 @@ $extraFoot = <<<JS
         } else {
           showError('Network error. Please check your connection and try again.');
         }
-      })
-      .finally(unlockBtn);
+        unlockBtn();
+        validateForm();
+      });
   });
+
+  // Initial validation on page load (for pre-filled fields)
+  document.addEventListener('DOMContentLoaded', validateForm);
 })();
 </script>
 JS;
