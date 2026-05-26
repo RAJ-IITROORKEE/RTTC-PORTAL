@@ -44,26 +44,26 @@ $needsCaste = ($userCaste !== 'General');
 $docDefs = [
     'photo'                => ['Passport Photo (3.5×4.5 cm)',            true,  'image/jpeg,image/jpg,image/png',                  200,  ['jpg','jpeg','png']],
     'signature'            => ['Signature (on white background, 7×3 cm)', true, 'image/jpeg,image/jpg,image/png',                  200,  ['jpg','jpeg','png']],
-    'hslc_marksheet'       => ['HSLC Marksheet',                          true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
-    'hsslc_marksheet'      => ['HSSLC Marksheet',                         true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
-    'degree_marksheet'     => ['Bachelor Degree Marksheet',               true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
-    'masters_marksheet'    => ['Master Degree Marksheet (if applicable)', false, 'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
-    'gubedcet_admit_card'  => ['GUBEDCET Admit Card',                     true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
-    'gubedcet_result_sheet'=> ['GUBEDCET Result Sheet',                   true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']],
+    'hslc_marksheet'       => ['HSLC Marksheet',                          true,  'application/pdf',                                 1024, ['pdf']],
+    'hsslc_marksheet'      => ['HSSLC Marksheet',                         true,  'application/pdf',                                 1024, ['pdf']],
+    'degree_marksheet'     => ['Bachelor Degree Marksheet',               true,  'application/pdf',                                 1024, ['pdf']],
+    'masters_marksheet'    => ['Master Degree Marksheet (if applicable)', false, 'application/pdf',                                 1024, ['pdf']],
+    'gubedcet_admit_card'  => ['GUBEDCET Admit Card',                     true,  'application/pdf',                                 1024, ['pdf']],
+    'gubedcet_result_sheet'=> ['GUBEDCET Result Sheet',                   true,  'application/pdf',                                 1024, ['pdf']],
 ];
 
 // Conditionally required category certificates (based on personal details)
 if ($needsCaste) {
-    $docDefs['caste_cert']   = [$userCaste . ' Caste Certificate',       true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']];
+    $docDefs['caste_cert']   = [$userCaste . ' Caste Certificate',       true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userEws) {
-    $docDefs['ews_cert']     = ['EWS Certificate',                        true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']];
+    $docDefs['ews_cert']     = ['EWS Certificate',                        true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userObcNcl) {
-    $docDefs['obc_ncl_cert'] = ['OBC-NCL Certificate',                   true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']];
+    $docDefs['obc_ncl_cert'] = ['OBC-NCL Certificate',                   true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userPwd) {
-    $docDefs['pwd_cert']     = ['PWD Certificate',                        true,  'image/jpeg,image/jpg,image/png,application/pdf', 1024, ['jpg','jpeg','png','pdf']];
+    $docDefs['pwd_cert']     = ['PWD Certificate',                        true,  'application/pdf',                                 1024, ['pdf']];
 }
 
 // ── View-only mode ─────────────────────────────────────────────────────────
@@ -201,7 +201,7 @@ ob_start();
         <i class="bi bi-info-circle-fill me-2"></i>
         <strong>Upload Guidelines:</strong>
         Photo &amp; Signature: JPG/PNG only, max <strong>200 KB</strong>.
-        All other documents: JPG/PNG/PDF, max <strong>1 MB</strong> each.
+        All other documents: <strong>PDF only</strong>, max <strong>1 MB</strong> each.
         Dimensions: Photo 3.5&times;4.5 cm | Signature 7&times;3 cm.
     </div>
 
@@ -255,7 +255,7 @@ ob_start();
                     <?php foreach (['hslc_marksheet','hsslc_marksheet','degree_marksheet','masters_marksheet'] as $f):
                         [$label, $req, $accept, $maxKB] = $docDefs[$f];
                         $hasFile = !empty($existing[$f]);
-                        $hint    = 'JPG/PNG/PDF, max 1 MB';
+                        $hint    = 'PDF only, max 1 MB';
                     ?>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold" for="<?= $f ?>">
@@ -291,7 +291,7 @@ ob_start();
                     <?php foreach (['gubedcet_admit_card','gubedcet_result_sheet'] as $f):
                         [$label, $req, $accept, $maxKB] = $docDefs[$f];
                         $hasFile = !empty($existing[$f]);
-                        $hint    = 'JPG/PNG/PDF, max 1 MB';
+                        $hint    = 'PDF only, max 1 MB';
                     ?>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold" for="<?= $f ?>">
@@ -341,7 +341,7 @@ ob_start();
                         <?php foreach ($activeCatFields as $f):
                             [$label, $req, $accept, $maxKB] = $docDefs[$f];
                             $hasFile = !empty($existing[$f]);
-                            $hint    = 'JPG/PNG/PDF, max 1 MB';
+                            $hint    = 'PDF only, max 1 MB';
                         ?>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold" for="<?= $f ?>">
