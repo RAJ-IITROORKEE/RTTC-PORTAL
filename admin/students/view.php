@@ -61,6 +61,12 @@ $stepColors  = ['secondary', 'info', 'primary', 'warning', 'success'];
 $fullName = trim(($data['firstname'] ?? '') . ' ' . ($data['middlename'] ?? '') . ' ' . ($data['lastname'] ?? ''));
 if (!$fullName) $fullName = $data['username'];
 $appId = 'RTTC-' . str_pad($data['uid'], 5, '0', STR_PAD_LEFT);
+$userId = $id;
+$appNumber = 'RTTC2026-' . str_pad($userId, 5, '0', STR_PAD_LEFT);
+$paidAmt = '₹' . number_format(($data['amount'] ?? 50000) / 100, 2);
+$paidAt = !empty($data['payment_date']) ? date('d M Y, h:i A', strtotime($data['payment_date'])) : 'N/A';
+$canDownloadApplication = canDownloadApplicationForm($data);
+$applicationPdfFilename = 'RTTC2026_Application_Form_' . $appNumber . '.pdf';
 
 $pageTitle  = 'Student: ' . $fullName . ' — Admin RTTC 2026';
 $activePage = 'students';
@@ -73,9 +79,16 @@ ob_start();
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Student Details</h4>
-    <a href="<?= route('admin.students') ?>" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Back
-    </a>
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <a href="<?= route('admin.students') ?>" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+        <?php if ($canDownloadApplication): ?>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#applicationFormModal">
+            <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Application
+        </button>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php include BASE_PATH . '/views/partials/flash.php'; ?>
@@ -405,6 +418,95 @@ ob_start();
         <?php endif; ?>
     </div>
 </div>
+
+<?php if ($canDownloadApplication): ?>
+<div class="modal fade" id="applicationFormModal" tabindex="-1" aria-labelledby="applicationFormModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="applicationFormModalLabel">
+                    <i class="bi bi-file-earmark-person me-2 text-primary"></i>Application Form
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnDownloadAdminApplication" onclick="downloadAdminApplication()">
+                        <i class="bi bi-download me-1"></i>Download
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body bg-light p-3" style="overflow:auto;">
+                <?php include BASE_PATH . '/payment/components/application-form.php'; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canDownloadApplication): ?>
+<?php $extraFoot = ($extraFoot ?? '') . '
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+    function setLoading(button, text) {
+        if (!button) return;
+        button.disabled = true;
+        button.dataset.orig = button.innerHTML;
+        button.innerHTML = \'<span class="spinner-border spinner-border-sm me-2"></span>\' + text;
+    }
+
+    function resetButton(button) {
+        if (!button) return;
+        button.disabled = false;
+        button.innerHTML = button.dataset.orig;
+    }
+
+    async function captureAndSave(elementId, filename, marginMm) {
+        var el = document.getElementById(elementId);
+        if (!el) throw new Error(\'Element not found: \' + elementId);
+
+        var canvas = await html2canvas(el, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: \'#ffffff\'
+        });
+
+        var imgData = canvas.toDataURL(\'image/jpeg\', 0.95);
+        var m = marginMm || 5;
+        var pdfW = 210;
+        var contentW = pdfW - 2 * m;
+        var contentH = (canvas.height / canvas.width) * contentW;
+        var pdfH = contentH + 2 * m;
+
+        var jsPDF = window.jspdf.jsPDF;
+        var pdf = new jsPDF({ unit: \'mm\', format: [pdfW, pdfH], orientation: \'portrait\' });
+        pdf.addImage(imgData, \'JPEG\', m, m, contentW, contentH);
+        pdf.save(filename);
+    }
+
+    window.downloadAdminApplication = async function () {
+        if (!window.html2canvas || !window.jspdf) {
+            alert(\'PDF library is still loading. Please wait a moment and try again.\');
+            return;
+        }
+
+        var button = document.getElementById(\'btnDownloadAdminApplication\');
+        setLoading(button, \'Generating...\');
+        try {
+            await captureAndSave(\'applicationSection\', ' . json_encode($applicationPdfFilename) . ', 5);
+        } catch (err) {
+            console.error(\'PDF error:\', err);
+            alert(\'Failed to generate PDF. Please try again.\');
+        } finally {
+            resetButton(button);
+        }
+    };
+})();
+</script>
+'; ?>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();
