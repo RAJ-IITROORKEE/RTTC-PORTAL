@@ -27,7 +27,7 @@
       <div class="col-md-4">
         <h6 class="fw-bold mb-2 text-white">Important</h6>
         <ul class="list-unstyled mb-0" style="font-size:.87rem;">
-          <li><i class="bi bi-dot me-1"></i>B.Ed. First Year Admission 2025-26</li>
+          <li><i class="bi bi-dot me-1"></i>B.Ed. First Year Admission 2026-2027</li>
           <li><i class="bi bi-dot me-1"></i>GUBEDCET 2026 Based Admission</li>
           <li><i class="bi bi-dot me-1"></i>Registration fee: ₹500 (non-refundable)</li>
           <li><i class="bi bi-dot me-1"></i>Pay via registered phone number only</li>

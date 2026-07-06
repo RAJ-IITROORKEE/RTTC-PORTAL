@@ -25,5 +25,5 @@ CREATE TABLE IF NOT EXISTS `notice_documents` (
 -- Insert sample data
 INSERT INTO `home_marquee_items` (`content`, `is_active`) VALUES 
 ('Welcome to RTTC 2026 B.Ed. Admission Portal', 1),
-('Apply Now for B.Ed. First Year 2025-26', 1),
+('Apply Now for B.Ed. First Year 2026-2027', 1),
 ('Last date for application: Extended till further notice', 1);

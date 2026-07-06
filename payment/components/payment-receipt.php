@@ -395,7 +395,7 @@ $fullName = trim(
                         font-weight:600;
                         color:#222;
                     ">
-                        B.Ed. First Year Admission 2025-26
+                        B.Ed. First Year Admission 2026-2027
                     </div>
                 </div>
 

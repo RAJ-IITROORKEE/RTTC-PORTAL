@@ -30,7 +30,7 @@
   <div class="header">
     <img src="<?= rtrim(APP_URL, '/') ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
     <h2>Rangia Teacher Training College</h2>
-    <p>B.Ed. Admission 2025–26 &nbsp;|&nbsp; Query Response</p>
+    <p>B.Ed. Admission 2026-2027 &nbsp;|&nbsp; Query Response</p>
   </div>
 
   <!-- Body -->
@@ -68,7 +68,7 @@
   <!-- Footer -->
   <div class="footer">
     <strong style="color:#27276d;">Rangia Teacher Training College</strong><br>
-    B.Ed. Admission 2025–26 &nbsp;&bull;&nbsp;
+    B.Ed. Admission 2026-2027 &nbsp;&bull;&nbsp;
     <a href="mailto:admissionrttc@gmail.com">admissionrttc@gmail.com</a><br>
     Phone: +91 03621-359330<br><br>
     <small>This is an automated message. Please do not reply directly to this email.</small>

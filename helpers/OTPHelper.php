@@ -189,7 +189,7 @@ class OTPHelper
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:10px;">
           <div style="text-align:center;margin-bottom:20px;">
             <h2 style="color:#27276d;margin-bottom:4px;">Rangia Teacher Training College</h2>
-            <p style="color:#666;font-size:0.9em;margin:0;">B.Ed. First Year Admission 2025-26</p>
+            <p style="color:#666;font-size:0.9em;margin:0;">B.Ed. First Year Admission 2026-2027</p>
           </div>
           <p>Dear Applicant,</p>
           <p>Use the OTP below to <strong>{$action}</strong>. It is valid for <strong>10 minutes</strong>.</p>

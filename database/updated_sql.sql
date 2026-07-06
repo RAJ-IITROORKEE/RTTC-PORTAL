@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `home_marquee_items` (
 INSERT INTO `home_marquee_items` (`content`, `sort_order`, `is_active`)
 SELECT seed.`content`, seed.`sort_order`, seed.`is_active`
 FROM (
-  SELECT 'Welcome to the Official Admission Portal for the B.Ed. First Year (2025-26) of Rangia Teacher Training College' AS `content`, 10 AS `sort_order`, 1 AS `is_active`
+  SELECT 'Welcome to the Official Admission Portal for the B.Ed. First Year (2026-2027) of Rangia Teacher Training College' AS `content`, 10 AS `sort_order`, 1 AS `is_active`
   UNION ALL
   SELECT 'Registration fee of Rs 500 is required after form submission. Applications without payment will be rejected.' AS `content`, 20 AS `sort_order`, 1 AS `is_active`
   UNION ALL

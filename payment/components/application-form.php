@@ -107,7 +107,7 @@ $paidAtFormatted = $paidDate
                         font-size:.66rem;
                         margin-top:2px;
                     ">
-                        B.Ed. First Year Admission Application 2025-26
+                        B.Ed. First Year Admission Application 2026-2027
                     </div>
 
                 </div>

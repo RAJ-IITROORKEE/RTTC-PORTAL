@@ -105,7 +105,7 @@ ob_start();
                         </tr>
                         <tr>
                             <td class="text-muted">Application For</td>
-                            <td>B.Ed. First Year 2025-26</td>
+                            <td>B.Ed. First Year 2026-2027</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Amount</td>

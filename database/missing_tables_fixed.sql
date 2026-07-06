@@ -37,11 +37,11 @@ CREATE TABLE `notice_documents` (
 -- Insert sample data for home_marquee_items
 INSERT INTO `home_marquee_items` (`content`, `link_url`, `link_label`, `sort_order`, `is_active`) VALUES 
 ('Welcome to RTTC 2026 B.Ed. Admission Portal', '', '', 1, 1),
-('Apply Now for B.Ed. First Year 2025-26', '', '', 2, 1),
+('Apply Now for B.Ed. First Year 2026-2027', '', '', 2, 1),
 ('Last date for application: Extended till further notice', '', '', 3, 1);
 
 -- Insert sample data for notice_documents
 INSERT INTO `notice_documents` (`doc_key`, `title`, `button_label`, `file_path`, `link_url`, `sort_order`, `is_active`) VALUES 
-('admission_notice', 'Admission Notice 2025-26', 'Download', '/storage/uploads/notices/admission_notice.pdf', '', 1, 1),
+('admission_notice', 'Admission Notice 2026-2027', 'Download', '/storage/uploads/notices/admission_notice.pdf', '', 1, 1),
 ('cutoff_marks', 'Cutoff Marks', 'Download', '/storage/uploads/notices/cutoff_marks.pdf', '', 2, 1),
 ('merit_list', 'Merit List', 'Download', '/storage/uploads/notices/merit_list.pdf', '', 3, 1);

@@ -14,7 +14,7 @@ $baseUrl    = rtrim(APP_URL, '/');
       <img src="<?= $baseUrl ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
       <span>
         <span class="d-block" style="font-size:1rem;line-height:1.2;">Rangia TTC</span>
-        <small class="d-block fw-normal" style="font-size:.72rem;opacity:.75;">B.Ed. Admission 2025-26</small>
+        <small class="d-block fw-normal" style="font-size:.72rem;opacity:.75;">B.Ed. Admission 2026-2027</small>
       </span>
     </a>
 

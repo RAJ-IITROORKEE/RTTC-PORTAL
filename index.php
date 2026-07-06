@@ -141,7 +141,7 @@ ob_start();
           </div>
           <h4 class="fw-bold" style="color:var(--rttc-primary);">New Registration</h4>
           <p class="text-muted" style="font-size:.9rem;">
-            Apply for B.Ed. First Year admission (2025-26). Complete your registration in 4 simple steps:
+            Apply for B.Ed. First Year admission (2026-2027). Complete your registration in 4 simple steps:
             Personal Details → Academic Details → Document Upload → Payment.
           </p>
         </div>

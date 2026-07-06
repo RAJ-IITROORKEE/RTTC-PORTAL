@@ -8,7 +8,7 @@ class SiteSettingsHelper
 {
     private const DEFAULT_MARQUEE = [
         [
-            'content' => 'Welcome to the Official Admission Portal for the B.Ed. First Year (2025-26) of Rangia Teacher Training College',
+            'content' => 'Welcome to the Official Admission Portal for the B.Ed. First Year (2026-2027) of Rangia Teacher Training College',
             'link_url' => '',
             'link_label' => 'Click Here',
         ],

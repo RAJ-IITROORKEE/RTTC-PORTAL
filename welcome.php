@@ -226,7 +226,7 @@ ob_start();
             <div class="card border-0 shadow-sm" style="border-left:4px solid #198754 !important;">
                 <div class="card-body p-4">
                     <h5 class="text-success mb-3"><i class="bi bi-patch-check-fill me-2"></i>Application Successfully Submitted</h5>
-                    <p class="text-muted mb-2">Your application for B.Ed. First Year 2025-26 admission has been successfully submitted. Keep the following information for reference:</p>
+                    <p class="text-muted mb-2">Your application for B.Ed. First Year 2026-2027 admission has been successfully submitted. Keep the following information for reference:</p>
                     <ul class="list-unstyled text-muted mb-4">
                         <li><i class="bi bi-dot me-1"></i>You will receive a confirmation email at <strong><?= htmlspecialchars($user['email']) ?></strong></li>
                         <li><i class="bi bi-dot me-1"></i>Keep your application number handy for future correspondence</li>

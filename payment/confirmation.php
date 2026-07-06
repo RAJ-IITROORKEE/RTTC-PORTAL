@@ -77,7 +77,7 @@ ob_start();
         <div>
             <h4 class="mb-1 fw-bold">Application Successfully Submitted!</h4>
             <p class="mb-0 opacity-90 small">
-                Your B.Ed. Admission application for 2025-26 has been submitted.
+                Your B.Ed. Admission application for 2026-2027 has been submitted.
                 Application No: <strong><?= $appNumber ?></strong>
             </p>
         </div>

@@ -13,7 +13,7 @@ define('APP_ENV',     EnvHelper::get('APP_ENV',   'development'));
 define('APP_URL',     EnvHelper::get('APP_URL',   'http://localhost/mycode/PROJECTS/RTTC_2026/'));
 define('APP_VERSION', '2026.1.0');
 define('BASE_URL',    rtrim(APP_URL, '/'));
-define('YEAR_LABEL',  '2025-26');
+define('YEAR_LABEL',  '2026-2027');
 
 // ── Database ─────────────────────────────────────────────────
 define('DB_HOST',     EnvHelper::get('DB_HOST',     'localhost'));
