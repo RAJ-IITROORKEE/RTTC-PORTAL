@@ -263,7 +263,7 @@ ob_start();
                         <label class="form-label">Caste/Category <span class="text-danger">*</span></label>
                         <select name="caste" class="form-select <?= isset($errors['caste']) ? 'is-invalid' : '' ?>" required>
                             <option value="">-- Select --</option>
-                            <?php foreach (['General','OBC','SC','STP','STH','Others'] as $cat): ?>
+                            <?php foreach (['General','OBC','OBC/MOBC (Non-Creamy Layer)','SC','STP','STH','Others'] as $cat): ?>
                                 <option value="<?= $cat ?>" <?= ($data['caste'] ?? '') === $cat ? 'selected' : '' ?>><?= $cat ?></option>
                             <?php endforeach; ?>
                         </select>
