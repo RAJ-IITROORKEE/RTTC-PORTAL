@@ -6,6 +6,7 @@ SecurityHelper::requireGuest();
 
 $errors   = [];
 $formData = [];
+$redirectAfterLogin = ($_GET['redirect'] ?? '') === 'request-query' ? 'request-query' : 'welcome';
 
 // ── CAPTCHA generation ───────────────────────────────────
 if (isset($_GET['captcha'])) {
@@ -59,6 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 SessionHelper::set('registration_time', $row['created_at']);
                 SessionHelper::syncProgress($conn, (int)$row['id']);
                 SessionHelper::regenerate();
+                if ($redirectAfterLogin === 'request-query') {
+                    redirect('request-query');
+                }
                 redirect('welcome', [], 'success', 'Welcome back, ' . $row['username'] . '!');
             } else {
                 $errors[] = 'Invalid email or password. Please try again.';
@@ -99,7 +103,7 @@ ob_start();
               </div>
             <?php endif; ?>
 
-            <form method="POST" action="<?= route('login') ?>" autocomplete="off" novalidate>
+            <form method="POST" action="<?= route('login', $redirectAfterLogin === 'request-query' ? ['redirect' => 'request-query'] : []) ?>" autocomplete="off" novalidate>
               <?= SecurityHelper::csrfField() ?>
 
               <!-- Email -->

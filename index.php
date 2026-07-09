@@ -37,6 +37,7 @@ foreach ($noticeDocs as $doc) {
 
 $termsDoc = $noticeDocMap['terms_conditions'] ?? null;
 $termsUrl = SiteSettingsHelper::getDocumentUrl($termsDoc);
+$raiseQueryUrl = $isLoggedIn ? route('request-query') : route('login', ['redirect' => 'request-query']);
 
 ob_start();
 ?>
@@ -106,6 +107,14 @@ ob_start();
           <li>Only GUBEDCET 2026 qualified candidates are eligible to apply.</li>
           <li>Minimum marks criteria must be fulfilled as per category.</li>
         </ul>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 p-2 rounded-3" style="background:#edf8f1;border:1px solid rgba(25,135,84,.22);">
+          <span class="small text-success fw-semibold">
+            <i class="bi bi-chat-dots-fill me-1"></i>Facing any issue? Raise a query to the admin for help.
+          </span>
+          <a href="<?= htmlspecialchars($raiseQueryUrl) ?>" class="btn btn-sm btn-success fw-semibold px-3">
+            <i class="bi bi-send me-1"></i>Raise Query
+          </a>
+        </div>
         <div class="d-flex flex-wrap gap-2">
           <?php if (!empty($noticeButtons)): ?>
             <?php foreach ($noticeButtons as $btn): ?>
@@ -128,22 +137,41 @@ ob_start();
 
 <!-- Action Cards -->
 <div class="container mb-5">
-  <div class="row g-4 justify-content-center">
+  <div class="row g-3 align-items-stretch">
     <!-- Registration Card -->
-    <div class="col-md-5">
-      <div class="rttc-card text-center p-4 h-100 d-flex flex-column justify-content-between">
+    <div class="col-md-6">
+      <div class="rttc-card text-center p-3 p-md-4 h-100 d-flex flex-column justify-content-between">
         <div>
           <div class="mb-3">
             <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
-                  style="width:80px;height:80px;background:rgba(39,39,109,.08);">
-              <i class="bi bi-pencil-square" style="font-size:2.5rem;color:var(--rttc-primary);"></i>
+                  style="width:76px;height:76px;background:rgba(39,39,109,.08);">
+              <i class="bi bi-pencil-square" style="font-size:2.35rem;color:var(--rttc-primary);"></i>
             </span>
           </div>
           <h4 class="fw-bold" style="color:var(--rttc-primary);">New Registration</h4>
-          <p class="text-muted" style="font-size:.9rem;">
-            Apply for B.Ed. First Year admission (2026-2027). Complete your registration in 4 simple steps:
-            Personal Details → Academic Details → Document Upload → Payment.
+          <p class="text-muted mb-3" style="font-size:.9rem;">
+            Apply for B.Ed. First Year admission (2026-2027). Complete your application in four guided steps.
           </p>
+          <div class="row g-2 text-start">
+            <?php foreach ([
+              ['Personal Details', 'bi-person-vcard', '01'],
+              ['Academic Details', 'bi-mortarboard', '02'],
+              ['Document Upload', 'bi-cloud-arrow-up', '03'],
+              ['Payment', 'bi-credit-card', '04'],
+            ] as $step): ?>
+              <div class="col-12 col-sm-6">
+                <div class="d-flex align-items-center gap-2 h-100 p-2 rounded-3" style="background:rgba(39,39,109,.045);border:1px solid rgba(39,39,109,.10);">
+                  <span class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:34px;height:34px;background:#fff;color:var(--rttc-primary);box-shadow:0 2px 8px rgba(39,39,109,.08);">
+                    <i class="bi <?= $step[1] ?>"></i>
+                  </span>
+                  <span>
+                    <span class="d-block text-muted" style="font-size:.68rem;line-height:1;">STEP <?= $step[2] ?></span>
+                    <span class="d-block fw-semibold text-dark" style="font-size:.82rem;line-height:1.2;"><?= $step[0] ?></span>
+                  </span>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
         </div>
         <?php if ($isLoggedIn): ?>
           <a href="<?= route('welcome') ?>" class="btn btn-rttc-primary mt-3">
@@ -158,17 +186,19 @@ ob_start();
     </div>
 
     <!-- Status / Download Card -->
-    <div class="col-md-5">
-      <div class="rttc-card text-center p-4 h-100 d-flex flex-column justify-content-between"
+    <div class="col-md-6">
+      <div class="rttc-card text-center p-3 p-md-4 h-100 d-flex flex-column justify-content-between"
            style="border-top:4px solid var(--rttc-success);">
         <div>
           <div class="mb-3">
             <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
-                  style="width:80px;height:80px;background:rgba(25,135,84,.08);">
+                  style="width:76px;height:76px;background:rgba(25,135,84,.08);">
               <?php if ($isLoggedIn && $progress === 4): ?>
-                <i class="bi bi-check-circle-fill" style="font-size:2.5rem;color:var(--rttc-success);"></i>
+                <i class="bi bi-check-circle-fill" style="font-size:2.35rem;color:var(--rttc-success);"></i>
+              <?php elseif ($isLoggedIn): ?>
+                <i class="bi bi-speedometer2" style="font-size:2.35rem;color:var(--rttc-success);"></i>
               <?php else: ?>
-                <i class="bi bi-people-fill" style="font-size:2.5rem;color:var(--rttc-success);"></i>
+                <i class="bi bi-box-arrow-in-right" style="font-size:2.35rem;color:var(--rttc-success);"></i>
               <?php endif; ?>
             </span>
           </div>
@@ -188,11 +218,25 @@ ob_start();
             </a>
           </div>
         <?php elseif ($isLoggedIn): ?>
-          <a href="<?= route('welcome') ?>" class="btn btn-outline-success mt-3">
+            <h4 class="fw-bold text-success">Continue Your Application</h4>
+            <p class="text-muted mb-3" style="font-size:.9rem;">
+              You can resume from your dashboard and complete the remaining registration steps.
+            </p>
+          </div>
+          <a href="<?= route('welcome') ?>" class="btn btn-outline-success mt-3 align-self-center px-4">
             <i class="bi bi-arrow-right-circle me-2"></i>Go to My Dashboard
           </a>
         <?php else: ?>
-          <a href="<?= route('login') ?>" class="btn btn-outline-success mt-3">
+            <h4 class="fw-bold text-success">Already Registered?</h4>
+            <p class="text-muted mb-3" style="font-size:.9rem;">
+              Login to continue your application, check progress, or download documents after completion.
+            </p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+              <span class="badge rounded-pill text-bg-light border px-3 py-2"><i class="bi bi-shield-check me-1 text-success"></i>Secure Login</span>
+              <span class="badge rounded-pill text-bg-light border px-3 py-2"><i class="bi bi-clock-history me-1 text-success"></i>Resume Anytime</span>
+            </div>
+          </div>
+          <a href="<?= route('login') ?>" class="btn btn-outline-success mt-3 align-self-center px-4">
             <i class="bi bi-box-arrow-in-right me-2"></i>Login to Continue
           </a>
         <?php endif; ?>
