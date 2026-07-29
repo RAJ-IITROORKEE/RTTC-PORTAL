@@ -107,7 +107,7 @@ $paidAtFormatted = $paidDate
                         font-size:.66rem;
                         margin-top:2px;
                     ">
-                        B.Ed. First Year Admission Application 2026-2027
+                        B.Ed admission 2026-27 application
                     </div>
 
                 </div>
@@ -262,28 +262,6 @@ $paidAtFormatted = $paidDate
 
                                 <td style="padding:5px 8px;border:1px solid #d7d9e2;">
                                     <?= htmlspecialchars($data['income'] ?? '-') ?>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
-                                    Email
-                                </td>
-
-                                <td style="
-                                    padding:5px 8px;
-                                    border:1px solid #d7d9e2;
-                                    word-break:break-word;
-                                ">
-                                    <?= htmlspecialchars($data['email'] ?? '-') ?>
-                                </td>
-
-                                <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
-                                    Mobile
-                                </td>
-
-                                <td style="padding:5px 8px;border:1px solid #d7d9e2;">
-                                    <?= htmlspecialchars($data['phone'] ?? '-') ?>
                                 </td>
                             </tr>
 
@@ -614,6 +592,27 @@ $paidAtFormatted = $paidDate
                         </td>
                     </tr>
 
+                    <tr>
+                        <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
+                            Gender / Category
+                        </td>
+                        <td style="padding:5px;border:1px solid #d7d9e2;">
+                            <?= htmlspecialchars($data['gubedcet_gender'] ?? '-') ?> /
+                            <?= htmlspecialchars($data['gubedcet_category'] ?? '-') ?>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
+                            Booklet / Correct / Wrong
+                        </td>
+                        <td style="padding:5px;border:1px solid #d7d9e2;">
+                            <?= htmlspecialchars($data['gubedcet_booklet_series'] ?? '-') ?> /
+                            <?= htmlspecialchars($data['gubedcet_correct'] ?? '-') ?> /
+                            <?= htmlspecialchars($data['gubedcet_wrong'] ?? '-') ?>
+                        </td>
+                    </tr>
+
                 </table>
 
             </div>
@@ -752,7 +751,6 @@ $paidAtFormatted = $paidDate
         &nbsp;|&nbsp;
         Rangia, Kamrup, Assam — 781354
         &nbsp;|&nbsp;
-        admissionrttc@gmail.com
 
     </div>
 

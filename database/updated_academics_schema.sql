@@ -22,5 +22,11 @@ ALTER TABLE `academic_details`
   ADD COLUMN IF NOT EXISTS `gubedcet_category`    VARCHAR(100)          DEFAULT NULL
     COMMENT 'Category (General/SC/ST/OBC…) from GUBEDCET result JSON',
 
+  ADD COLUMN IF NOT EXISTS `gubedcet_gender`       VARCHAR(20)           DEFAULT NULL
+    COMMENT 'Gender from the current provisional list',
+
+  ADD COLUMN IF NOT EXISTS `gubedcet_booklet_series` VARCHAR(10)         DEFAULT NULL
+    COMMENT 'Question booklet series from the current provisional list',
+
   ADD COLUMN IF NOT EXISTS `academic_declaration` TINYINT(1)   NOT NULL DEFAULT 0
     COMMENT '1 = student confirmed all academic details are correct';

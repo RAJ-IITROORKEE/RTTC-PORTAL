@@ -39,6 +39,7 @@ function route(string $name, array $params = []): string
         'api.verify-otp'      => '/api/verify-otp',
         'api.check-email'     => '/api/check-email',
         'api.check-phone'     => '/api/check-phone',
+         'api.provisional-student' => '/api/provisional-student',
 
         // Admin
         'admin.login'             => '/admin/login',
@@ -56,6 +57,7 @@ function route(string $name, array $params = []): string
         'admin.settings'          => '/admin/settings',
         'admin.notice-documents'  => '/admin/notice-documents',
         'admin.marquee'           => '/admin/marquee',
+         'admin.provisional-students' => '/admin/provisional-students',
 
         // Query / Support
         'request-query'           => '/request-query',

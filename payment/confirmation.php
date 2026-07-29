@@ -22,8 +22,10 @@ $stmt = $db->prepare(
             a.bachelor_total_marks, a.bachelor_percentage, a.bachelor_division,
             a.masters_pass_year, a.masters_board, a.masters_institute, a.masters_obtained_marks,
             a.masters_total_marks, a.masters_percentage, a.masters_division,
-            a.gubedcet_rollno, a.gubedcet_marks, a.gubedcet_rank, a.gubedcet_name,
-            a.gubedcet_category, a.gu_registered, a.gu_reg_no, a.gu_reg_year,
+             a.gubedcet_rollno, a.gubedcet_marks, a.gubedcet_rank, a.gubedcet_name,
+             a.gubedcet_category, a.gubedcet_gender, a.gubedcet_booklet_series,
+             a.gubedcet_correct, a.gubedcet_wrong, a.gubedcet_unattempted,
+             a.gu_registered, a.gu_reg_no, a.gu_reg_year,
             a.migrated, a.other_university,
             d.photo, d.signature,
             d.hslc_marksheet, d.hsslc_marksheet, d.degree_marksheet, d.masters_marksheet,
@@ -77,7 +79,7 @@ ob_start();
         <div>
             <h4 class="mb-1 fw-bold">Application Successfully Submitted!</h4>
             <p class="mb-0 opacity-90 small">
-                Your B.Ed. Admission application for 2026-2027 has been submitted.
+                Your B.Ed admission 2026-27 application has been submitted.
                 Application No: <strong><?= $appNumber ?></strong>
             </p>
         </div>

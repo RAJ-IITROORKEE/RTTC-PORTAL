@@ -48,6 +48,9 @@
         <a href="<?= route('admin.documents') ?>" class="sidebar-link <?= ($activePage ?? '') === 'documents' ? 'active' : '' ?>">
             <i class="bi bi-file-earmark-check-fill"></i><span>Documents</span>
         </a>
+        <a href="<?= route('admin.provisional-students') ?>" class="sidebar-link <?= ($activePage ?? '') === 'provisional-students' ? 'active' : '' ?>">
+            <i class="bi bi-database-fill-check"></i><span>Provisional List</span>
+        </a>
 
         <div class="nav-section-label">Support</div>
         <a href="<?= route('admin.queries') ?>" class="sidebar-link <?= ($activePage ?? '') === 'queries' ? 'active' : '' ?>">

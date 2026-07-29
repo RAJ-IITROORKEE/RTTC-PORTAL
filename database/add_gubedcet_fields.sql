@@ -22,6 +22,8 @@ ADD COLUMN `migrated` ENUM('yes','no') DEFAULT 'no' AFTER `gu_registered`,
 ADD COLUMN `other_university` VARCHAR(255) DEFAULT NULL AFTER `migrated`,
 ADD COLUMN `gubedcet_name` VARCHAR(255) DEFAULT NULL AFTER `gubedcet_rollno`,
 ADD COLUMN `gubedcet_category` VARCHAR(50) DEFAULT NULL AFTER `gubedcet_name`,
+ADD COLUMN `gubedcet_gender` VARCHAR(20) DEFAULT NULL AFTER `gubedcet_category`,
+ADD COLUMN `gubedcet_booklet_series` VARCHAR(10) DEFAULT NULL AFTER `gubedcet_gender`,
 ADD COLUMN `academic_declaration` TINYINT(1) DEFAULT 0 AFTER `gubedcet_unattempted`;
 
 -- ============================================================

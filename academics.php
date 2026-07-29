@@ -7,6 +7,7 @@ SecurityHelper::requireAuth();
 $db     = db();
 $userId = SessionHelper::get('user_id');
 $errors = [];
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 
 // Step gate: must have completed step 1
 $pstmt = $db->prepare("SELECT current_step FROM registration_progress WHERE user_id = ?");
@@ -46,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
 
+    if (!$registrationOpen) {
+        redirect(route('welcome'), [], 'error', 'Registration is currently closed. Academic details cannot be submitted now.');
+    }
+
     $d = [];
     $textFields = [
         'hslc_pass_year','hslc_board','hslc_institute','hslc_division',
@@ -60,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'migrated','other_university',
         'gubedcet_rollno','gubedcet_marks','gubedcet_rank',
         'gubedcet_correct','gubedcet_wrong','gubedcet_unattempted',
-        'gubedcet_name','gubedcet_category',
+        'gubedcet_name','gubedcet_gender','gubedcet_category','gubedcet_booklet_series',
     ];
     foreach ($textFields as $f) {
         $d[$f] = SecurityHelper::sanitize($_POST[$f] ?? '');
@@ -72,10 +77,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'hslc_pass_year','hslc_board','hslc_institute','hslc_obtained_marks','hslc_total_marks',
         'hsslc_pass_year','hsslc_board','hsslc_institute','hsslc_obtained_marks','hsslc_total_marks',
         'bachelor_pass_year','bachelor_board','bachelor_institute','bachelor_obtained_marks','bachelor_total_marks',
-        'gubedcet_rollno','gubedcet_marks','gubedcet_rank',
+        'gubedcet_rollno',
     ];
     foreach ($required as $r) {
-        if (empty($d[$r])) $errors[$r] = 'Required.';
+        if (trim((string) $d[$r]) === '') $errors[$r] = 'Required.';
+    }
+
+    // Readonly inputs are not trusted. Resolve result fields from the current
+    // provisional list before writing to the database.
+    $provisionalStudent = (new ProvisionalStudentRepository(ROOT_PATH . '/PROVISIONAL LIST.csv'))
+        ->findByRollNo($d['gubedcet_rollno']);
+    if ($provisionalStudent === null) {
+        $errors['gubedcet_rollno'] = 'This roll number was not found in the current provisional list.';
+    } else {
+        $d['gubedcet_name'] = $provisionalStudent['name'];
+        $d['gubedcet_gender'] = $provisionalStudent['gender'];
+        $d['gubedcet_category'] = $provisionalStudent['category'];
+        $d['gubedcet_booklet_series'] = $provisionalStudent['booklet_series'];
+        $d['gubedcet_marks'] = $provisionalStudent['total_marks'];
+        $d['gubedcet_rank'] = $provisionalStudent['rank'];
+        $d['gubedcet_correct'] = $provisionalStudent['correct_marks'];
+        $d['gubedcet_wrong'] = $provisionalStudent['wrong_marks'];
+        $d['gubedcet_unattempted'] = '';
+
+        foreach (['gubedcet_marks', 'gubedcet_rank'] as $field) {
+            if (trim((string) $d[$field]) === '') $errors[$field] = 'Required.';
+        }
     }
 
     // GU fields required only if registered
@@ -162,6 +189,13 @@ ob_start();
             <a href="<?= route('request-query') ?>" class="alert-link fw-semibold">raise a query</a>
             and the admin may grant you temporary edit access.</span>
         </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!$registrationOpen): ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <i class="bi bi-lock-fill me-2"></i>
+        <strong>Registration is currently closed.</strong> Academic details cannot be submitted or edited until registration is reopened by the administrator.
     </div>
     <?php endif; ?>
 
@@ -577,6 +611,16 @@ ob_start();
                                class="form-control bg-light" value="<?= dv($data,'gubedcet_category') ?>" readonly>
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label">Gender</label>
+                        <input type="text" name="gubedcet_gender" id="gubedcet_gender"
+                               class="form-control bg-light" value="<?= dv($data,'gubedcet_gender') ?>" readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Booklet Series</label>
+                        <input type="text" name="gubedcet_booklet_series" id="gubedcet_booklet_series"
+                               class="form-control bg-light" value="<?= dv($data,'gubedcet_booklet_series') ?>" readonly>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Correct Marks</label>
                         <input type="text" name="gubedcet_correct" id="gubedcet_correct"
                                class="form-control bg-light" value="<?= dv($data,'gubedcet_correct') ?>" readonly>
@@ -621,7 +665,7 @@ ob_start();
                 <button type="button" id="acadPreviewBtn" class="btn btn-outline-primary btn-lg px-4">
                     <i class="bi bi-eye me-1"></i>Preview
                 </button>
-                <?php if (!$viewOnly): ?>
+                <?php if (!$viewOnly && $registrationOpen): ?>
                 <button type="button" id="acadSaveBtn" class="btn btn-primary btn-lg px-5"
                         <?= empty($data['academic_declaration']) ? 'disabled' : '' ?>>
                     Save & Continue <i class="bi bi-arrow-right ms-1"></i>
@@ -677,7 +721,7 @@ ob_start();
 document.addEventListener('DOMContentLoaded', function () {
 
     // ── Constants ────────────────────────────────────────────────────────────
-    const JSON_URL   = '<?= rtrim(APP_URL, '/') ?>/assets/data/gubedcet_2026.json';
+    const LOOKUP_URL = '<?= route('api.provisional-student') ?>';
     const YEAR_MIN   = 1990;
     const YEAR_MAX   = 2027;
 
@@ -689,24 +733,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const previewModal = new bootstrap.Modal(document.getElementById('acadPreviewModal'));
     const confirmModal = new bootstrap.Modal(document.getElementById('acadConfirmModal'));
 
-    let gubedcetData = [];
     let finalSubmit  = false;
-
-    // ── Load GUBEDCET JSON ───────────────────────────────────────────────────
-    fetch(JSON_URL)
-        .then(r => r.ok ? r.json() : Promise.reject('fetch failed'))
-        .then(json => {
-            if (json && json['Table 1'] && Array.isArray(json['Table 1'])) {
-                gubedcetData = json['Table 1'].map(entry => {
-                    const clean = {};
-                    for (const k in entry) {
-                        clean[k.replace(/\r/g,'').trim()] = typeof entry[k] === 'string' ? entry[k].trim() : entry[k];
-                    }
-                    return clean;
-                });
-            }
-        })
-        .catch(err => console.warn('GUBEDCET JSON load failed:', err));
 
     // ── Declaration checkbox → enable/disable Save btn ───────────────────────
     function toggleSaveBtn() {
@@ -828,30 +855,52 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function clearGubedcetFields() {
         ['gubedcet_name','gubedcet_marks','gubedcet_rank',
-         'gubedcet_correct','gubedcet_wrong','gubedcet_unattempted','gubedcet_category']
+         'gubedcet_correct','gubedcet_wrong','gubedcet_unattempted',
+         'gubedcet_category','gubedcet_gender','gubedcet_booklet_series']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
 
     function fillGubedcetFields(student) {
         const map = {
-            'gubedcet_name'        : 'Name',
-            'gubedcet_marks'       : 'Total Marks',
-            'gubedcet_rank'        : 'Rank',
-            'gubedcet_correct'     : 'Correct Marks',
-            'gubedcet_wrong'       : 'Wrong Marks',
-            'gubedcet_category'    : 'Category',
+            'gubedcet_name': 'name', 'gubedcet_marks': 'total_marks',
+            'gubedcet_rank': 'rank', 'gubedcet_correct': 'correct_marks',
+            'gubedcet_wrong': 'wrong_marks', 'gubedcet_category': 'category',
+            'gubedcet_gender': 'gender', 'gubedcet_booklet_series': 'booklet_series'
         };
         for (const [id, key] of Object.entries(map)) {
             const el = document.getElementById(id);
-            if (el) el.value = student[key] || '';
+            if (el) el.value = student[key] ?? '';
         }
-        // Unattempted is not in JSON; clear it
+        // The provisional list has no unattempted column.
         const ua = document.getElementById('gubedcet_unattempted');
         if (ua) ua.value = '';
     }
 
     const rollnoInput    = document.getElementById('gubedcet_rollno');
     const rollnoNotFound = document.getElementById('rollno_notfound');
+
+    let lookupRequest = null;
+
+    function lookupRollNumber(val) {
+        if (lookupRequest) lookupRequest.abort();
+        lookupRequest = new AbortController();
+
+        fetch(LOOKUP_URL + '?roll_no=' + encodeURIComponent(val), {headers: {'Accept': 'application/json'}})
+            .then(response => response.ok ? response.json() : Promise.reject(response))
+            .then(payload => {
+                if (rollnoInput.value.trim() !== val) return;
+                if (payload.success) {
+                    fillGubedcetFields(payload.student);
+                } else {
+                    return Promise.reject(payload);
+                }
+            })
+            .catch(error => {
+                if (error.name === 'AbortError' || rollnoInput.value.trim() !== val) return;
+                clearGubedcetFields();
+                rollnoNotFound.style.display = 'block';
+            });
+    }
 
     rollnoInput?.addEventListener('input', function () {
         const val = this.value.trim();
@@ -861,15 +910,7 @@ document.addEventListener('DOMContentLoaded', function () {
             this.classList.remove('is-invalid');
             this.classList.add('is-valid');
 
-            if (gubedcetData.length > 0) {
-                const student = gubedcetData.find(s => s['Roll No'] === val);
-                if (student) {
-                    fillGubedcetFields(student);
-                } else {
-                    clearGubedcetFields();
-                    rollnoNotFound.style.display = 'block';
-                }
-            }
+            lookupRollNumber(val);
         } else {
             this.classList.remove('is-valid');
             if (val.length > 0) this.classList.add('is-invalid');
@@ -880,6 +921,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Validate pre-filled roll number on load
     if (rollnoInput?.value.trim().length === 10) {
         rollnoInput.classList.add('is-valid');
+        lookupRollNumber(rollnoInput.value.trim());
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -982,9 +1024,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ['Roll Number',   gv('gubedcet_rollno')],
             ['Candidate Name',gv('gubedcet_name')],
             ['Total Marks',   gv('gubedcet_marks')],
-            ['Rank',          gv('gubedcet_rank')],
-            ['Category',      gv('gubedcet_category')],
-            ['Correct Marks', gv('gubedcet_correct')],
+             ['Rank',          gv('gubedcet_rank')],
+             ['Category',      gv('gubedcet_category')],
+             ['Gender',        gv('gubedcet_gender')],
+             ['Booklet Series',gv('gubedcet_booklet_series')],
+             ['Correct Marks', gv('gubedcet_correct')],
             ['Wrong Marks',   gv('gubedcet_wrong')],
         ]);
 
@@ -1006,7 +1050,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <tr><th class="bg-light text-muted">GU Registered</th><td>${getRadio('gu_registered') === 'yes' ? 'Yes — ' + gv('gu_reg_no') : 'No'}</td></tr>
                     <tr><th class="bg-light text-muted">GUBEDCET Roll No.</th><td>${gv('gubedcet_rollno') || '—'}</td></tr>
                     <tr><th class="bg-light text-muted">GUBEDCET Marks</th><td>${gv('gubedcet_marks') || '—'}</td></tr>
-                    <tr><th class="bg-light text-muted">GUBEDCET Rank</th><td>${gv('gubedcet_rank') || '—'}</td></tr>
+                     <tr><th class="bg-light text-muted">GUBEDCET Rank</th><td>${gv('gubedcet_rank') || '—'}</td></tr>
+                     <tr><th class="bg-light text-muted">GUBEDCET Candidate</th><td>${gv('gubedcet_name') || '—'}</td></tr>
+                     <tr><th class="bg-light text-muted">GUBEDCET Category</th><td>${gv('gubedcet_category') || '—'}</td></tr>
+                     <tr><th class="bg-light text-muted">GUBEDCET Gender</th><td>${gv('gubedcet_gender') || '—'}</td></tr>
+                     <tr><th class="bg-light text-muted">Booklet Series</th><td>${gv('gubedcet_booklet_series') || '—'}</td></tr>
                 </tbody>
             </table>
             <div class="alert alert-warning mt-3 mb-0 small">
