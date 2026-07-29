@@ -39,4 +39,7 @@ assertRepositoryValue('MRINMOY KOUSHIK', $fieldSearch['rows'][0]['name'] ?? null
 assertRepositoryValue(['EWS', 'GENERAL / OPEN CATEGORY / UNRESERVED'], $result['filters']['categories'], 'browse returns sorted category options');
 assertRepositoryValue(['FEMALE', 'MALE'], $result['filters']['genders'], 'browse returns sorted gender options');
 
+$sortedResult = $repository->browse('', '', '', 1, 10, 'total_marks', 'desc');
+assertRepositoryValue('374', $sortedResult['rows'][0]['total_marks'] ?? null, 'browse sorts numeric fields descending');
+
 echo "provisional_student_repository_test passed\n";

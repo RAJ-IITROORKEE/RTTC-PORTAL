@@ -9,10 +9,12 @@ $search = trim((string) ($_GET['search'] ?? ''));
 $gender = trim((string) ($_GET['gender'] ?? ''));
 $category = trim((string) ($_GET['category'] ?? ''));
 $page = max(1, min(100000, (int) ($_GET['page'] ?? 1)));
+$sort = trim((string) ($_GET['sort'] ?? 'serial_no'));
+$direction = trim((string) ($_GET['direction'] ?? 'asc'));
 
 try {
     $result = (new ProvisionalStudentRepository(ROOT_PATH . '/PROVISIONAL LIST.csv'))
-        ->browse($search, $gender, $category, $page, 10);
+        ->browse($search, $gender, $category, $page, 10, $sort, $direction);
     $loadError = '';
 } catch (Throwable $exception) {
     $result = [
@@ -29,11 +31,13 @@ $pageTitle = 'Provisional Student List - Admin RTTC 2026';
 $activePage = 'provisional-students';
 $breadcrumb = [['label' => 'Provisional Student List']];
 
-$query = function (int $pageNumber) use ($search, $gender, $category): string {
+$query = function (int $pageNumber) use ($search, $gender, $category, $sort, $direction): string {
     return route('admin.provisional-students', [
         'search' => $search,
         'gender' => $gender,
         'category' => $category,
+        'sort' => $sort,
+        'direction' => $direction,
         'page' => $pageNumber,
     ]);
 };
@@ -62,14 +66,19 @@ ob_start();
     <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">Categories</div><div class="fs-3 fw-bold text-warning"><?= count($stats['category']) ?></div></div></div></div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-lg-5"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white fw-semibold">Gender Distribution</div><div class="card-body"><div id="genderChart" style="height:280px"></div></div></div></div>
+    <div class="col-lg-7"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white fw-semibold">Category Distribution</div><div class="card-body"><div id="categoryChart" style="height:280px"></div></div></div></div>
+</div>
+
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
-            <div class="col-lg-5">
+            <div class="col-lg-4">
                 <label class="form-label small fw-semibold">Search all fields</label>
                 <input type="search" name="search" class="form-control" value="<?= $escape($search) ?>" placeholder="Name, roll, marks, rank, booklet, category...">
             </div>
-            <div class="col-sm-4 col-lg-2">
+            <div class="col-sm-6 col-lg-2">
                 <label class="form-label small fw-semibold">Gender</label>
                 <select name="gender" class="form-select">
                     <option value="">All genders</option>
@@ -78,7 +87,7 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-sm-8 col-lg-3">
+            <div class="col-sm-6 col-lg-2">
                 <label class="form-label small fw-semibold">Category</label>
                 <select name="category" class="form-select">
                     <option value="">All categories</option>
@@ -87,15 +96,25 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-sm-6 col-lg-1"><button class="btn btn-primary w-100" type="submit" title="Search"><i class="bi bi-search"></i></button></div>
+            <div class="col-sm-6 col-lg-2">
+                <label class="form-label small fw-semibold">Sort by</label>
+                <select name="sort" class="form-select">
+                    <?php foreach (['serial_no' => 'Serial No.', 'roll_no' => 'Roll No.', 'name' => 'Name', 'total_marks' => 'Total Marks', 'rank' => 'Rank'] as $sortKey => $sortLabel): ?>
+                        <option value="<?= $sortKey ?>" <?= $sort === $sortKey ? 'selected' : '' ?>><?= $sortLabel ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-1">
+                <label class="form-label small fw-semibold">Order</label>
+                <select name="direction" class="form-select">
+                    <option value="asc" <?= strtolower($direction) === 'asc' ? 'selected' : '' ?>>A-Z / Low</option>
+                    <option value="desc" <?= strtolower($direction) === 'desc' ? 'selected' : '' ?>>Z-A / High</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-1"><button class="btn btn-primary w-100" type="submit" title="Search and sort"><i class="bi bi-search"></i></button></div>
             <div class="col-sm-6 col-lg-1"><a class="btn btn-outline-secondary w-100" href="<?= route('admin.provisional-students') ?>">Reset</a></div>
         </form>
     </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-lg-5"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white fw-semibold">Gender Distribution</div><div class="card-body"><div id="genderChart" style="height:280px"></div></div></div></div>
-    <div class="col-lg-7"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white fw-semibold">Category Distribution</div><div class="card-body"><div id="categoryChart" style="height:280px"></div></div></div></div>
 </div>
 
 <div class="card border-0 shadow-sm">

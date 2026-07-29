@@ -56,16 +56,21 @@ class ProvisionalStudentRepository
         string $gender = '',
         string $category = '',
         int $page = 1,
-        int $perPage = 10
+        int $perPage = 10,
+        string $sort = 'serial_no',
+        string $direction = 'asc'
     ): array {
         $search = trim($search);
         $gender = trim($gender);
         $category = trim($category);
         $page = max(1, $page);
         $perPage = min(100, max(1, $perPage));
+        $sortable = ['serial_no', 'roll_no', 'name', 'gender', 'category', 'total_marks', 'rank'];
+        $sort = in_array($sort, $sortable, true) ? $sort : 'serial_no';
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
         $offset = ($page - 1) * $perPage;
 
-        $rows = [];
+        $matchingRows = [];
         $matchingTotal = 0;
         $totalStudents = 0;
         $marksTotal = 0.0;
@@ -101,15 +106,25 @@ class ProvisionalStudentRepository
                     continue;
                 }
 
-                if ($matchingTotal >= $offset && count($rows) < $perPage) {
-                    $rows[] = $student;
-                }
+                $matchingRows[] = $student;
                 $matchingTotal++;
             }
         } finally {
             fclose($handle);
         }
 
+        usort($matchingRows, function (array $left, array $right) use ($sort, $direction): int {
+            $leftValue = $left[$sort];
+            $rightValue = $right[$sort];
+            if (in_array($sort, ['serial_no', 'total_marks', 'rank'], true) && is_numeric($leftValue) && is_numeric($rightValue)) {
+                $comparison = (float) $leftValue <=> (float) $rightValue;
+            } else {
+                $comparison = strnatcasecmp((string) $leftValue, (string) $rightValue);
+            }
+            return $direction === 'desc' ? -$comparison : $comparison;
+        });
+
+        $rows = array_slice($matchingRows, $offset, $perPage);
         ksort($genderCounts, SORT_NATURAL | SORT_FLAG_CASE);
         ksort($categoryCounts, SORT_NATURAL | SORT_FLAG_CASE);
 
