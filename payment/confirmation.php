@@ -116,7 +116,7 @@ ob_start();
     <!-- Repeat download buttons at bottom -->
     <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
         <?php if ($prospectusUrl !== ''): ?>
-        <a href="<?= htmlspecialchars($prospectusUrl) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+        <a href="<?= htmlspecialchars($prospectusUrl) ?>" target="_blank" rel="noopener" class="btn btn-success">
             <i class="bi bi-journal-text me-1"></i><?= htmlspecialchars((string)($prospectusDoc['button_label'] ?? 'Prospectus')) ?>
         </a>
         <?php endif; ?>

@@ -372,6 +372,18 @@ html, body {
 .rttc-footer a { color: rgba(255,255,255,.75); text-decoration: none; }
 .rttc-footer a:hover { color: #fff; }
 .rttc-footer hr { border-color: rgba(255,255,255,.2); }
+.rttc-footer-brand { display: flex; align-items: center; gap: .65rem; margin-bottom: .55rem; }
+.rttc-footer-brand-logo {
+  width: 56px; height: 56px; flex-shrink: 0;
+  border-radius: 50%; object-fit: cover;
+  border: 2px solid rgba(255,255,255,.5);
+}
+.rttc-footer-brand-copy { min-width: 0; line-height: 1.2; }
+.rttc-footer-brand-title { color: #fff; font-size: 1.05rem; font-weight: 700; }
+.rttc-footer-brand-affiliation { margin-top: .18rem; color: rgba(255,255,255,.72); font-size: .68rem; line-height: 1.3; }
+.rttc-footer-brand-affiliation div { display: block; }
+.rttc-footer-brand-portal { margin-top: .14rem; color: rgba(255,255,255,.78); font-size: .73rem; font-weight: 600; }
+.rttc-footer-address { display: block; color: rgba(255,255,255,.72); }
 
 /* ── Spinner Overlay ─────────────────────────────────────── */
 #page-loader {

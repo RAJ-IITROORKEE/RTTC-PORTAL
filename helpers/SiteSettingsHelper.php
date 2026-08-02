@@ -50,7 +50,7 @@ class SiteSettingsHelper
             'doc_key' => 'prospectus',
             'title' => 'Prospectus',
             'button_label' => 'Prospectus',
-            'file_path' => 'assets/docs/prospectus_2026.pdf',
+            'file_path' => 'assets/RTTC Prospectus 2026-27-2.pdf',
             'link_url' => '',
         ],
     ];

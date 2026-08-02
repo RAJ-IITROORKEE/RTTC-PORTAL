@@ -4,12 +4,19 @@
     <div class="row gy-3">
       <!-- College Info -->
       <div class="col-md-4">
-        <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="rttc-footer-brand">
           <img src="<?= $baseUrl ?>/assets/img/RTTC_logo.jpeg" alt="Logo"
-               style="height:42px;width:42px;border-radius:50%;border:2px solid rgba(255,255,255,.5);">
-          <strong style="font-size:1rem;">Rangia Teacher Training College</strong>
+               class="rttc-footer-brand-logo">
+          <div class="rttc-footer-brand-copy">
+            <div class="rttc-footer-brand-title">Rangia Teacher Training College</div>
+            <div class="rttc-footer-brand-affiliation">
+              <div>Recognized by NCTE, affiliated to Gauhati University and</div>
+              <div>conveyed concurrence by Govt. of Assam</div>
+            </div>
+            <div class="rttc-footer-brand-portal">B.Ed Admission Portal 2026-27</div>
+          </div>
         </div>
-         <small><?= COLLEGE_ADDRESS ?></small>
+        <small class="rttc-footer-address"><?= COLLEGE_ADDRESS ?></small>
       </div>
       <!-- Quick Links -->
       <div class="col-md-4">
