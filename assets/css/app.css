@@ -54,18 +54,50 @@ html, body {
   background: #fff;
   border-bottom: 3px solid var(--rttc-primary);
   box-shadow: var(--rttc-shadow-sm);
-  padding: .6rem 0;
+  padding: .45rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
 }
 .rttc-navbar .navbar-brand {
   display: flex; align-items: center; gap: .6rem;
   font-weight: 700; color: var(--rttc-primary) !important;
-  font-size: 1.1rem;
+  min-width: 0;
+  font-size: 1rem;
 }
 .rttc-navbar .navbar-brand img {
   height: 48px; width: 48px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--rttc-primary);
+}
+.rttc-brand-copy {
+  display: block;
+  min-width: 0;
+  line-height: 1.15;
+}
+.rttc-brand-title,
+.rttc-brand-affiliation,
+.rttc-brand-portal { display: block; }
+.rttc-brand-title {
+  color: var(--rttc-primary);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.rttc-brand-affiliation {
+  max-width: 520px;
+  margin-top: .12rem;
+  color: #737986;
+  font-size: .63rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+.rttc-brand-portal {
+  margin-top: .1rem;
+  color: #737986;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .02em;
 }
 .rttc-navbar .nav-link {
   color: var(--rttc-primary) !important;
@@ -360,6 +392,12 @@ html, body {
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 576px) {
+  .rttc-navbar { padding: .35rem 0; }
+  .rttc-navbar .navbar-brand { gap: .45rem; }
+  .rttc-navbar .navbar-brand img { width: 40px; height: 40px; }
+  .rttc-brand-title { font-size: .82rem; white-space: normal; }
+  .rttc-brand-affiliation { max-width: 245px; font-size: .5rem; }
+  .rttc-brand-portal { font-size: .6rem; }
   .auth-card .card-body,
   .auth-card-body { padding: 1.5rem 1.25rem; }
   .auth-card .auth-header,

@@ -59,6 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $d['ews']     = isset($_POST['ews']) ? 1 : 0;
     $d['obc_ncl'] = 0;
     $d['pwd']     = isset($_POST['pwd']) ? 1 : 0;
+    if ($d['caste'] === 'General') {
+        $d['pwd'] = 0;
+    }
     $d['declaration_confirm'] = isset($_POST['declaration_confirm']) ? 1 : 0;
 
     if (($d['religion'] ?? '') === 'Others') {
@@ -275,7 +278,7 @@ ob_start();
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Caste/Category <span class="text-danger">*</span></label>
-                        <select name="caste" class="form-select <?= isset($errors['caste']) ? 'is-invalid' : '' ?>" required>
+                        <select name="caste" id="casteSelect" class="form-select <?= isset($errors['caste']) ? 'is-invalid' : '' ?>" required>
                             <option value="">-- Select --</option>
                             <?php foreach (['General','OBC','MOBC','OBC (Non-creamy layer)','MOBC (Non-creamy layer)','SC','STP','STH','others'] as $cat): ?>
                                 <option value="<?= $cat ?>" <?= ($data['caste'] ?? '') === $cat ? 'selected' : '' ?>><?= $cat ?></option>
@@ -293,7 +296,7 @@ ob_start();
                                        <?= !empty($data['ews']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="ewsCheck">EWS (Economically Weaker Section)</label>
                             </div>
-                            <div class="form-check">
+                            <div class="form-check" id="pwdOption">
                                 <input class="form-check-input" type="checkbox" name="pwd" id="pwdCheck" value="1"
                                        <?= !empty($data['pwd']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="pwdCheck">PWD (Person with Disability)</label>
@@ -568,6 +571,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Core references ──────────────────────────────────────────────────────
     const personalForm        = document.getElementById('personalForm');
     const religionSelect      = personalForm?.querySelector('[name="religion"]');
+    const casteSelect         = document.getElementById('casteSelect');
+    const pwdOption           = document.getElementById('pwdOption');
+    const pwdCheck            = document.getElementById('pwdCheck');
     const otherReligionWrap   = document.getElementById('otherReligionWrap');
     const otherReligionInput  = document.getElementById('otherReligionInput');
     const previewModalEl      = document.getElementById('previewModal');
@@ -598,6 +604,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     religionSelect?.addEventListener('change', toggleOtherReligion);
     toggleOtherReligion();
+
+    // General applicants may select EWS, but PWD is not shown for this category.
+    function toggleSpecialCategories() {
+        const isGeneral = casteSelect?.value === 'General';
+        if (!pwdOption || !pwdCheck) return;
+        pwdOption.style.display = isGeneral ? 'none' : '';
+        pwdCheck.disabled = isGeneral;
+        if (isGeneral) pwdCheck.checked = false;
+    }
+    casteSelect?.addEventListener('change', toggleSpecialCategories);
+    toggleSpecialCategories();
 
     // ── Preview helpers ──────────────────────────────────────────────────────
     function getFieldValue(name) {

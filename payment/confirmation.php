@@ -57,6 +57,8 @@ $fullName  = trim(($data['firstname'] ?? '') . ' ' . ($data['middlename'] ?? '')
 $appNumber = 'RTTC2026-' . str_pad($userId, 5, '0', STR_PAD_LEFT);
 $paidAmt   = '₹' . number_format(($data['amount'] ?? 50000) / 100, 2);
 $paidAt    = $data['payment_date'] ? date('d M Y, h:i A', strtotime($data['payment_date'])) : 'N/A';
+$prospectusDoc = SiteSettingsHelper::getNoticeDocumentByKey('prospectus');
+$prospectusUrl = SiteSettingsHelper::getDocumentUrl($prospectusDoc);
 
 $pageTitle   = 'Application Confirmation - RTTC 2026';
 $currentStep = 4;
@@ -87,9 +89,6 @@ ob_start();
 
     <!-- ── Download Action Bar ─────────────────────────────────────── -->
     <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
-        <a href="<?= route('welcome') ?>" class="btn btn-outline-secondary">
-            <i class="bi bi-house me-1"></i>My Dashboard
-        </a>
         <button type="button" class="btn btn-outline-primary" id="btnDownloadReceipt" onclick="downloadReceipt()">
             <i class="bi bi-file-earmark-pdf me-1"></i>Download Payment Receipt
         </button>
@@ -108,13 +107,17 @@ ob_start();
          SECTION 2 — APPLICATION FORM
          Using component from /payment/components/application-form.php
     ════════════════════════════════════════════════════════════════ -->
-    <?php include __DIR__ . '/components/application-form.php'; ?>
+    <div class="application-preview-scroll">
+        <?php include __DIR__ . '/components/application-form.php'; ?>
+    </div>
 
     <!-- Repeat download buttons at bottom -->
     <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
-        <a href="<?= route('welcome') ?>" class="btn btn-outline-secondary">
-            <i class="bi bi-house me-1"></i>My Dashboard
+        <?php if ($prospectusUrl !== ''): ?>
+        <a href="<?= htmlspecialchars($prospectusUrl) ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+            <i class="bi bi-journal-text me-1"></i><?= htmlspecialchars((string)($prospectusDoc['button_label'] ?? 'Prospectus')) ?>
         </a>
+        <?php endif; ?>
         <button type="button" class="btn btn-outline-primary" id="btnDownloadReceipt2" onclick="downloadReceipt()">
             <i class="bi bi-file-earmark-pdf me-1"></i>Download Payment Receipt
         </button>
@@ -125,6 +128,7 @@ ob_start();
 </div>
 
 <style>
+.application-preview-scroll { overflow-x: auto; }
 @media print {
     nav, .btn, .marquee-container, footer, .stepper-wrapper { display: none !important; }
 }

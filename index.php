@@ -26,6 +26,11 @@ foreach ($noticeDocs as $doc) {
         $noticeDocMap[$docKey] = $doc;
     }
 
+    // Prospectus is available on the confirmation page instead of the homepage.
+    if ($docKey === 'prospectus') {
+        continue;
+    }
+
     $url = SiteSettingsHelper::getDocumentUrl($doc);
     if ($url !== '') {
         $noticeButtons[] = [
@@ -78,26 +83,11 @@ ob_start();
   </div>
 </div>
 
-<!-- Hero Row: College Info + Notice -->
+<!-- Hero Row: Notice -->
 <div class="container mt-3 mb-4">
   <div class="row g-3">
-    <!-- College Info -->
-    <div class="col-md-6">
-      <div class="rttc-card h-100 p-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <img src="<?= rtrim(APP_URL,'/') ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo"
-               class="rounded-circle" style="height:64px;width:64px;object-fit:cover;border:3px solid var(--rttc-primary);">
-          <div>
-            <h5 class="mb-0 fw-bold" style="color:var(--rttc-primary);">Rangia Teacher Training College</h5>
-            <small class="text-muted">Established & Recognised by NCTE</small>
-          </div>
-        </div>
-        <hr>
-        <p class="mb-1"><i class="bi bi-geo-alt-fill me-2 text-primary"></i><?= COLLEGE_ADDRESS ?></p>
-      </div>
-    </div>
     <!-- Notice -->
-    <div class="col-md-6">
+    <div class="col-12">
       <div class="rttc-card h-100 p-4" style="border-left:4px solid var(--rttc-primary);">
         <h6 class="fw-bold" style="color:var(--rttc-primary);"><i class="bi bi-megaphone-fill me-2"></i>NOTICE</h6>
         <ul class="mb-3 ps-3" style="font-size:.9rem;">

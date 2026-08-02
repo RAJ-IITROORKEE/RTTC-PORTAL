@@ -13,10 +13,11 @@ $baseUrl    = rtrim(APP_URL, '/');
     <!-- Brand -->
     <a class="navbar-brand" href="<?= route('home') ?>">
       <img src="<?= $baseUrl ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
-      <span>
-        <span class="d-block" style="font-size:1rem;line-height:1.2;">Rangia TTC</span>
-        <small class="d-block fw-normal" style="font-size:.72rem;opacity:.75;">B.Ed admission 2026-27</small>
-      </span>
+      <div class="rttc-brand-copy">
+        <span class="rttc-brand-title">Rangia Teacher Training College</span>
+        <small class="rttc-brand-affiliation">Recognized by NCTE, affiliated to Gauhati University and conveyed concurrence by Govt. of Assam</small>
+        <small class="rttc-brand-portal">B.Ed Admission Portal 2026-27</small>
+      </div>
     </a>
 
     <!-- Toggler -->

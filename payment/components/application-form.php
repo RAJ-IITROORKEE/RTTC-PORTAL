@@ -267,6 +267,30 @@ $paidAtFormatted = $paidDate
 
                             <tr>
                                 <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
+                                    Applicant Phone
+                                </td>
+                                <td style="padding:5px 8px;border:1px solid #d7d9e2;">
+                                    <?= htmlspecialchars($data['phone'] ?? '-') ?>
+                                </td>
+                                <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
+                                    Emergency Contact
+                                </td>
+                                <td style="padding:5px 8px;border:1px solid #d7d9e2;">
+                                    <?= htmlspecialchars($data['emergency_contact'] ?? '-') ?>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
+                                    Applicant Email
+                                </td>
+                                <td colspan="3" style="padding:5px 8px;border:1px solid #d7d9e2;word-break:break-word;">
+                                    <?= htmlspecialchars($data['email'] ?? '-') ?>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:5px;background:#f5f5f7;border:1px solid #d7d9e2;font-weight:600;">
                                     Permanent Address
                                 </td>
 

@@ -46,6 +46,13 @@ class SiteSettingsHelper
             'file_path' => 'assets/docs/required_documents.pdf',
             'link_url' => '',
         ],
+        'prospectus' => [
+            'doc_key' => 'prospectus',
+            'title' => 'Prospectus',
+            'button_label' => 'Prospectus',
+            'file_path' => 'assets/docs/prospectus_2026.pdf',
+            'link_url' => '',
+        ],
     ];
 
     public static function isRegistrationOpen(): bool
