@@ -5,6 +5,7 @@
  */
 $pageTitle = $pageTitle ?? 'RTTC 2026 – Rangia Teacher Training College';
 $activeNav = $activeNav ?? '';
+$appCssVersion = filemtime(ROOT_PATH . '/assets/css/app.css') ?: APP_VERSION;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,7 +27,7 @@ $activeNav = $activeNav ?? '';
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <!-- App CSS -->
-  <link href="<?= rtrim(APP_URL,'/') ?>/assets/css/app.css" rel="stylesheet">
+  <link href="<?= rtrim(APP_URL,'/') ?>/assets/css/app.css?v=<?= rawurlencode((string) $appCssVersion) ?>" rel="stylesheet">
   <?= $extraHead ?? '' ?>
 </head>
 <body>
