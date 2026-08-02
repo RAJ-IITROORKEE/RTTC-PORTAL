@@ -15,7 +15,10 @@ $baseUrl    = rtrim(APP_URL, '/');
       <img src="<?= $baseUrl ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
       <div class="rttc-brand-copy">
         <span class="rttc-brand-title">Rangia Teacher Training College</span>
-        <small class="rttc-brand-affiliation">Recognized by NCTE, affiliated to Gauhati University and conveyed concurrence by Govt. of Assam</small>
+        <small class="rttc-brand-affiliation">
+          <span>Recognized by NCTE, affiliated to Gauhati University and</span>
+          <span>conveyed concurrence by Govt. of Assam</span>
+        </small>
         <small class="rttc-brand-portal">B.Ed Admission Portal 2026-27</small>
       </div>
     </a>

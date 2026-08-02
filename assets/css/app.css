@@ -74,30 +74,35 @@ html, body {
 .rttc-brand-copy {
   display: block;
   min-width: 0;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 .rttc-brand-title,
 .rttc-brand-affiliation,
 .rttc-brand-portal { display: block; }
 .rttc-brand-title {
   color: var(--rttc-primary);
-  font-size: 1rem;
+  font-size: 1.08rem;
+  line-height: 1.2;
   white-space: nowrap;
 }
 .rttc-brand-affiliation {
-  max-width: 520px;
-  margin-top: .12rem;
-  color: #737986;
-  font-size: .63rem;
-  font-weight: 400;
-  line-height: 1.25;
-}
-.rttc-brand-portal {
-  margin-top: .1rem;
+  margin-top: .18rem;
   color: #737986;
   font-size: .7rem;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: normal;
+}
+.rttc-brand-affiliation span {
+  display: block;
+}
+.rttc-brand-portal {
+  margin-top: .14rem;
+  color: #737986;
+  font-size: .75rem;
   font-weight: 600;
   letter-spacing: .02em;
+  white-space: nowrap;
 }
 .rttc-navbar .nav-link {
   color: var(--rttc-primary) !important;
@@ -395,8 +400,9 @@ html, body {
   .rttc-navbar { padding: .35rem 0; }
   .rttc-navbar .navbar-brand { gap: .45rem; }
   .rttc-navbar .navbar-brand img { width: 40px; height: 40px; }
+  .rttc-brand-copy { max-width: calc(100vw - 112px); }
   .rttc-brand-title { font-size: .82rem; white-space: normal; }
-  .rttc-brand-affiliation { max-width: 245px; font-size: .5rem; }
+  .rttc-brand-affiliation { font-size: .52rem; }
   .rttc-brand-portal { font-size: .6rem; }
   .auth-card .card-body,
   .auth-card-body { padding: 1.5rem 1.25rem; }
