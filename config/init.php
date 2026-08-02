@@ -17,6 +17,7 @@ require_once ROOT_PATH . '/helpers/OTPHelper.php';
 require_once ROOT_PATH . '/helpers/SiteSettingsHelper.php';
 require_once ROOT_PATH . '/helpers/ApplicationHelper.php';
 require_once ROOT_PATH . '/helpers/ProvisionalStudentRepository.php';
+require_once ROOT_PATH . '/helpers/RegistrationHelper.php';
 
 // Start / resume secure session
 SessionHelper::start();

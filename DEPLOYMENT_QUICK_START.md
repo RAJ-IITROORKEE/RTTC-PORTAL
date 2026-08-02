@@ -73,13 +73,13 @@ DB_USERNAME=<your_cpanel_username>_db_username
 DB_PASSWORD=<your_db_password>
 DB_NAME=<your_cpanel_username>_rttc2026
 
-# Email - Use Gmail or your email
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_ENCRYPTION=tls
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your_app_password
-SMTP_FROM_EMAIL=your-email@gmail.com
+# Email - Hostinger SMTP
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_ENCRYPTION=ssl
+SMTP_USERNAME=your-mailbox@your-domain.com
+SMTP_PASSWORD=your_mailbox_password
+SMTP_FROM_EMAIL=your-mailbox@your-domain.com
 SMTP_FROM_NAME="RTTC Admissions"
 
 # Razorpay - Update with live keys
