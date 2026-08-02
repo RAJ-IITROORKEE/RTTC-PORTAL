@@ -101,7 +101,9 @@ ob_start();
          SECTION 1 — PAYMENT RECEIPT
          Using component from /payment/components/payment-receipt.php
     ════════════════════════════════════════════════════════════════ -->
-    <?php include __DIR__ . '/components/payment-receipt.php'; ?>
+    <div class="document-preview-scroll">
+        <?php include __DIR__ . '/components/payment-receipt.php'; ?>
+    </div>
 
     <!-- ════════════════════════════════════════════════════════════════
          SECTION 2 — APPLICATION FORM
@@ -128,6 +130,7 @@ ob_start();
 </div>
 
 <style>
+.document-preview-scroll,
 .application-preview-scroll { overflow-x: auto; }
 @media print {
     nav, .btn, .marquee-container, footer, .stepper-wrapper { display: none !important; }
@@ -155,32 +158,52 @@ ob_start();
         });
     }
 
-    /*
-     * Both sections are capped at max-width:794px and use flex/table
-     * layouts with no Bootstrap responsive breakpoints. Whatever you
-     * see in the preview is exactly what html2canvas captures — no
-     * viewport tricks needed.
-     */
-    async function captureAndSave(elementId, filename, marginMm) {
+    async function captureAndSave(elementId, filename, marginMm, useA4Page) {
         var el = document.getElementById(elementId);
         if (!el) throw new Error('Element not found: ' + elementId);
+
+        var captureWidth = Math.ceil(Math.max(el.scrollWidth, el.getBoundingClientRect().width));
+        var captureHeight = Math.ceil(Math.max(el.scrollHeight, el.getBoundingClientRect().height));
 
         var canvas = await html2canvas(el, {
             scale:           2,
             useCORS:         true,
             allowTaint:      true,
             logging:         false,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            width:           captureWidth,
+            height:          captureHeight,
+            windowWidth:     captureWidth,
+            windowHeight:    captureHeight,
+            scrollX:         0,
+            scrollY:         -window.scrollY
         });
 
         var imgData  = canvas.toDataURL('image/jpeg', 0.95);
         var m        = marginMm || 6;
+        var { jsPDF } = window.jspdf;
+
+        if (useA4Page) {
+            var pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            var pdfW = pdf.internal.pageSize.getWidth();
+            var pdfH = pdf.internal.pageSize.getHeight();
+            var maxW = pdfW - 2 * m;
+            var maxH = pdfH - 2 * m;
+            var imageScale = Math.min(maxW / canvas.width, maxH / canvas.height);
+            var imageW = canvas.width * imageScale;
+            var imageH = canvas.height * imageScale;
+            var imageX = (pdfW - imageW) / 2;
+            var imageY = (pdfH - imageH) / 2;
+
+            pdf.addImage(imgData, 'JPEG', imageX, imageY, imageW, imageH);
+            pdf.save(filename);
+            return;
+        }
+
         var pdfW     = 210;
         var contentW = pdfW - 2 * m;
         var contentH = (canvas.height / canvas.width) * contentW;
         var pdfH     = contentH + 2 * m;
-
-        var { jsPDF } = window.jspdf;
         var pdf = new jsPDF({ unit: 'mm', format: [pdfW, pdfH], orientation: 'portrait' });
         pdf.addImage(imgData, 'JPEG', m, m, contentW, contentH);
         pdf.save(filename);
@@ -196,7 +219,7 @@ ob_start();
         }
         setLoading(receiptBtns, 'Generating…');
         try {
-            await captureAndSave('receiptSection', 'RTTC2026_Payment_Receipt_<?= $appNumber ?>.pdf', 8);
+            await captureAndSave('receiptSection', 'RTTC2026_Payment_Receipt_<?= $appNumber ?>.pdf', 8, true);
         } catch (err) {
             console.error('PDF error:', err);
             alert('Failed to generate PDF. Please try again.');
