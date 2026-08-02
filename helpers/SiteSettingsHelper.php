@@ -8,7 +8,7 @@ class SiteSettingsHelper
 {
     private const DEFAULT_MARQUEE = [
         [
-            'content' => 'Welcome to the Official Admission Portal for the B.Ed. First Year (2026-2027) of Rangia Teacher Training College',
+            'content' => 'Welcome to the Official Admission Portal for B.Ed admission 2026-27 of Rangia Teacher Training College',
             'link_url' => '',
             'link_label' => 'Click Here',
         ],
@@ -47,6 +47,41 @@ class SiteSettingsHelper
             'link_url' => '',
         ],
     ];
+
+    public static function isRegistrationOpen(): bool
+    {
+        return self::getSetting('registration_open', '1') === '1';
+    }
+
+    public static function setRegistrationOpen(bool $isOpen): bool
+    {
+        $db = db();
+        $value = $isOpen ? '1' : '0';
+        $stmt = $db->prepare("INSERT INTO site_settings (setting_key, setting_value)
+                              VALUES ('registration_open', ?)
+                              ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('s', $value);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    private static function getSetting(string $key, string $default): string
+    {
+        $db = db();
+        $stmt = $db->prepare("SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1");
+        if (!$stmt) {
+            return $default;
+        }
+        $stmt->bind_param('s', $key);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return isset($row['setting_value']) ? (string)$row['setting_value'] : $default;
+    }
 
     public static function getMarqueeItems(): array
     {

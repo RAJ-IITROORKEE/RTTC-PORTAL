@@ -189,7 +189,7 @@ class OTPHelper
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:10px;">
           <div style="text-align:center;margin-bottom:20px;">
             <h2 style="color:#27276d;margin-bottom:4px;">Rangia Teacher Training College</h2>
-            <p style="color:#666;font-size:0.9em;margin:0;">B.Ed. First Year Admission 2026-2027</p>
+            <p style="color:#666;font-size:0.9em;margin:0;">B.Ed admission 2026-27</p>
           </div>
           <p>Dear Applicant,</p>
           <p>Use the OTP below to <strong>{$action}</strong>. It is valid for <strong>10 minutes</strong>.</p>
@@ -198,7 +198,7 @@ class OTPHelper
           </div>
           <p style="color:#dc3545;font-size:0.9em;"><strong>Do not share this OTP with anyone.</strong></p>
           <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-          <p style="font-size:0.85em;color:#888;">For support: <a href="mailto:admissionrttc@gmail.com">admissionrttc@gmail.com</a> | +91 03621-359330</p>
+          <p style="font-size:0.85em;color:#888;">Please use the admission portal to raise a query if you need help.</p>
         </div>
         HTML;
     }

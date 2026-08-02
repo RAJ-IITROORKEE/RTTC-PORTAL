@@ -133,18 +133,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sets = implode('=?,', $allFields) . '=?';
             $sql  = "UPDATE academic_details SET $sets WHERE user_id = ?";
             $stmt = $db->prepare($sql);
-            $params = array_merge($allValues, [$userId]);
-            $stmt->bind_param($types . 'i', ...$params);
         } else {
             $cols         = implode(',', $allFields);
             $placeholders = implode(',', array_fill(0, count($allFields), '?'));
             $sql          = "INSERT INTO academic_details (user_id, $cols) VALUES (?, $placeholders)";
             $stmt         = $db->prepare($sql);
-            $params       = array_merge([$userId], $allValues);
-            $stmt->bind_param('i' . $types, ...$params);
         }
 
-        if ($stmt->execute()) {
+        if (!$stmt) {
+            error_log('Academic details statement preparation failed: ' . $db->error);
+            $errors['db'] = 'Academic details could not be saved. Please contact the administrator.';
+        } else {
+            if ($existing) {
+                $params = array_merge($allValues, [$userId]);
+                $stmt->bind_param($types . 'i', ...$params);
+            } else {
+                $params = array_merge([$userId], $allValues);
+                $stmt->bind_param('i' . $types, ...$params);
+            }
+        }
+
+        if ($stmt && $stmt->execute()) {
             $stmt->close();
             $upd = $db->prepare("UPDATE registration_progress SET current_step = GREATEST(current_step, 2) WHERE user_id = ?");
             $upd->bind_param('i', $userId);
@@ -153,8 +162,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SessionHelper::setFlash('success', 'Academic details saved successfully!');
             redirect(route('documents'));
         } else {
-            $errors['db'] = 'Database error. Please try again.';
-            $stmt->close();
+            if (!isset($errors['db'])) {
+                $errors['db'] = 'Database error. Please try again.';
+            }
+            if ($stmt) $stmt->close();
         }
     }
     $data = $d;
@@ -578,7 +589,7 @@ ob_start();
                         <input type="text" name="gubedcet_rollno" id="gubedcet_rollno"
                                class="form-control <?= isset($errors['gubedcet_rollno']) ? 'is-invalid' : '' ?>"
                                value="<?= dv($data,'gubedcet_rollno') ?>" maxlength="10"
-                               placeholder="10-digit roll no." required>
+                               placeholder="10-digit roll no." pattern="[0-9]{10}" minlength="10" required>
                         <div class="invalid-feedback" id="rollno_err">
                             <?= $errors['gubedcet_rollno'] ?? 'Enter a valid 10-digit roll number.' ?>
                         </div>
@@ -729,25 +740,39 @@ document.addEventListener('DOMContentLoaded', function () {
     const form       = document.getElementById('academicForm');
     const saveBtn    = document.getElementById('acadSaveBtn');
     const declCheck  = document.getElementById('academicDeclaration');
+    const rollnoInput    = document.getElementById('gubedcet_rollno');
+    const rollnoNotFound = document.getElementById('rollno_notfound');
 
     const previewModal = new bootstrap.Modal(document.getElementById('acadPreviewModal'));
     const confirmModal = new bootstrap.Modal(document.getElementById('acadConfirmModal'));
 
     let finalSubmit  = false;
+    let lookupPending = false;
+    let rollnoValid = rollnoInput?.value.trim().length === 10;
 
     // ── Declaration checkbox → enable/disable Save btn ───────────────────────
     function toggleSaveBtn() {
-        if (saveBtn) saveBtn.disabled = !declCheck.checked;
+        if (saveBtn) saveBtn.disabled = !declCheck.checked || !rollnoValid || lookupPending;
     }
     declCheck?.addEventListener('change', toggleSaveBtn);
     toggleSaveBtn();
 
     // ── Master's degree toggle ───────────────────────────────────────────────
+    const mastersSection = document.getElementById('mastersSection');
+    const mastersToggleText = document.getElementById('mastersToggleText');
+
+    function setMastersState(visible) {
+        if (!mastersSection) return;
+        mastersSection.style.display = visible ? '' : 'none';
+        mastersSection.querySelectorAll('input, select, textarea').forEach(el => {
+            el.disabled = !visible;
+        });
+        if (mastersToggleText) mastersToggleText.textContent = visible ? 'Hide' : 'Show';
+    }
+
+    setMastersState(mastersSection?.style.display !== 'none');
     document.getElementById('toggleMasters')?.addEventListener('click', function () {
-        const sec = document.getElementById('mastersSection');
-        const txt = document.getElementById('mastersToggleText');
-        if (sec.style.display === 'none') { sec.style.display = ''; txt.textContent = 'Hide'; }
-        else { sec.style.display = 'none'; txt.textContent = 'Show'; }
+        setMastersState(mastersSection.style.display === 'none');
     });
 
     // ── GU registered toggle ────────────────────────────────────────────────
@@ -876,21 +901,29 @@ document.addEventListener('DOMContentLoaded', function () {
         if (ua) ua.value = '';
     }
 
-    const rollnoInput    = document.getElementById('gubedcet_rollno');
-    const rollnoNotFound = document.getElementById('rollno_notfound');
-
     let lookupRequest = null;
 
     function lookupRollNumber(val) {
         if (lookupRequest) lookupRequest.abort();
         lookupRequest = new AbortController();
+        lookupPending = true;
+        rollnoValid = false;
+        toggleSaveBtn();
+        rollnoInput.setCustomValidity('Checking this roll number...');
 
-        fetch(LOOKUP_URL + '?roll_no=' + encodeURIComponent(val), {headers: {'Accept': 'application/json'}})
+        fetch(LOOKUP_URL + '?roll_no=' + encodeURIComponent(val), {
+            headers: {'Accept': 'application/json'},
+            signal: lookupRequest.signal
+        })
             .then(response => response.ok ? response.json() : Promise.reject(response))
             .then(payload => {
                 if (rollnoInput.value.trim() !== val) return;
                 if (payload.success) {
                     fillGubedcetFields(payload.student);
+                    lookupPending = false;
+                    rollnoValid = true;
+                    rollnoInput.setCustomValidity('');
+                    toggleSaveBtn();
                 } else {
                     return Promise.reject(payload);
                 }
@@ -898,22 +931,31 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => {
                 if (error.name === 'AbortError' || rollnoInput.value.trim() !== val) return;
                 clearGubedcetFields();
-                rollnoNotFound.style.display = 'block';
+                lookupPending = false;
+                rollnoValid = false;
+                rollnoInput.setCustomValidity('Roll number not found in the GUBEDCET provisional list.');
+                toggleSaveBtn();
+                if (rollnoNotFound) rollnoNotFound.style.display = 'block';
             });
     }
 
     rollnoInput?.addEventListener('input', function () {
         const val = this.value.trim();
-        rollnoNotFound.style.display = 'none';
+        if (rollnoNotFound) rollnoNotFound.style.display = 'none';
 
         if (val.length === 10 && /^\d{10}$/.test(val)) {
             this.classList.remove('is-invalid');
             this.classList.add('is-valid');
+            this.setCustomValidity('Checking this roll number...');
 
             lookupRollNumber(val);
         } else {
             this.classList.remove('is-valid');
             if (val.length > 0) this.classList.add('is-invalid');
+            lookupPending = false;
+            rollnoValid = false;
+            this.setCustomValidity(val ? 'Enter a valid 10-digit roll number.' : '');
+            toggleSaveBtn();
             clearGubedcetFields();
         }
     });

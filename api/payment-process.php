@@ -15,6 +15,16 @@ SecurityHelper::verifyCsrf();
 $db     = db();
 $userId = SessionHelper::get('user_id');
 
+$progressStmt = $db->prepare("SELECT current_step FROM registration_progress WHERE user_id = ? LIMIT 1");
+$progressStmt->bind_param('i', $userId);
+$progressStmt->execute();
+$progress = $progressStmt->get_result()->fetch_assoc();
+$progressStmt->close();
+if ((int)($progress['current_step'] ?? 0) < 3) {
+    SessionHelper::setFlash('error', 'Please complete and submit your documents before making payment.');
+    redirect(route('documents'));
+}
+
 $paymentId = SecurityHelper::sanitize($_POST['razorpay_payment_id'] ?? '');
 $orderId   = SecurityHelper::sanitize($_POST['razorpay_order_id'] ?? '');
 $signature = SecurityHelper::sanitize($_POST['razorpay_signature'] ?? '');

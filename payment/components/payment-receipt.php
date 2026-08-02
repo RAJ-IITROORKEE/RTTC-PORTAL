@@ -340,46 +340,6 @@ $fullName = trim(
                     </div>
                 </div>
 
-                <!-- Email -->
-                <div>
-                    <div style="
-                        color:#6c757d;
-                        font-size:0.72rem;
-                        margin-bottom:4px;
-                    ">
-                        Email Address
-                    </div>
-
-                    <div style="
-                        font-size:0.84rem;
-                        font-weight:600;
-                        color:#222;
-                        line-height:1.45;
-                        word-break:break-word;
-                    ">
-                        <?= htmlspecialchars($data['email'] ?? '') ?>
-                    </div>
-                </div>
-
-                <!-- Mobile -->
-                <div>
-                    <div style="
-                        color:#6c757d;
-                        font-size:0.72rem;
-                        margin-bottom:4px;
-                    ">
-                        Mobile Number
-                    </div>
-
-                    <div style="
-                        font-size:0.86rem;
-                        font-weight:600;
-                        color:#222;
-                    ">
-                        <?= htmlspecialchars($data['phone'] ?? '') ?>
-                    </div>
-                </div>
-
                 <!-- Course -->
                 <div>
                     <div style="
@@ -395,7 +355,7 @@ $fullName = trim(
                         font-weight:600;
                         color:#222;
                     ">
-                        B.Ed. First Year Admission 2026-2027
+                        B.Ed admission 2026-27
                     </div>
                 </div>
 

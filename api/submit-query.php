@@ -23,10 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Collect & sanitize inputs FIRST (need email for rate-limit check)
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Please log in to submit a query.']);
+    exit;
+}
+
+$contactStmt = $conn->prepare("SELECT email, phone FROM users WHERE id = ? LIMIT 1");
+$contactStmt->bind_param('i', $userId);
+$contactStmt->execute();
+$contact = $contactStmt->get_result()->fetch_assoc() ?: [];
+$contactStmt->close();
+$email = trim($contact['email'] ?? '');
+$phone = trim($contact['phone'] ?? '');
+
+// Collect & sanitize inputs. Contact details come from the authenticated account.
 $name    = trim($_POST['name']    ?? '');
-$email   = trim($_POST['email']   ?? '');
-$phone   = trim($_POST['phone']   ?? '');
 $subject = trim($_POST['issue_subject'] ?? '');
 $message = trim($_POST['message'] ?? '');
 
@@ -37,7 +49,6 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'A valid email addre
 if (strlen($subject) < 1) $errors[] = 'Please select a subject.';
 if (strlen($message) < 20) $errors[] = 'Message must be at least 20 characters.';
 if (strlen($message) > 2000) $errors[] = 'Message is too long.';
-if ($phone !== '' && !preg_match('/^[0-9]{10}$/', $phone)) $errors[] = 'Phone must be a 10-digit number.';
 
 if (!empty($errors)) {
     echo json_encode(['success' => false, 'message' => implode(' ', $errors)]);

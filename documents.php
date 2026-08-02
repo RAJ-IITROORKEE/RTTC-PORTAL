@@ -7,6 +7,7 @@ SecurityHelper::requireAuth();
 $db     = db();
 $userId = SessionHelper::get('user_id');
 $errors = [];
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 
 // Step gate
 $pstmt = $db->prepare("SELECT current_step FROM registration_progress WHERE user_id = ?");
@@ -85,6 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
+
+    if (!$registrationOpen) {
+        redirect(route('welcome'), [], 'error', 'Registration is currently closed. Documents cannot be submitted or replaced now.');
+    }
 
     // Declaration checkbox
     if (empty($_POST['doc_declaration'])) {
@@ -194,6 +199,13 @@ ob_start();
             <a href="<?= route('request-query') ?>" class="alert-link fw-semibold">raise a query</a>
             and the admin may grant you temporary edit access.</span>
         </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!$registrationOpen): ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <i class="bi bi-lock-fill me-2"></i>
+        <strong>Registration is currently closed.</strong> Document uploads and replacements are disabled. Applicants who have completed documents may still proceed to payment.
     </div>
     <?php endif; ?>
 
@@ -398,7 +410,7 @@ ob_start();
                 <button type="button" class="btn btn-outline-primary btn-lg px-4" id="docPreviewBtn">
                     <i class="bi bi-eye me-1"></i>Preview Documents
                 </button>
-                <?php if (!$viewOnly): ?>
+                <?php if (!$viewOnly && $registrationOpen): ?>
                 <button type="submit" class="btn btn-primary btn-lg px-5" id="docSaveBtn" disabled>
                     Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
                 </button>

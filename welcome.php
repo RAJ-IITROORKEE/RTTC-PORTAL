@@ -7,6 +7,7 @@ SecurityHelper::requireAuth();
 // Get user progress from DB
 $db = db();
 $userId = SessionHelper::get('user_id');
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 
 $stmt = $db->prepare("SELECT current_step, is_submitted FROM registration_progress WHERE user_id = ?");
 $stmt->bind_param('i', $userId);
@@ -30,7 +31,7 @@ $editAccess = $stmtEA->num_rows > 0;
 $stmtEA->close();
 
 // Get user info
-$stmt2 = $db->prepare("SELECT username, email, phone, created_at FROM users WHERE id = ?");
+$stmt2 = $db->prepare("SELECT username, created_at FROM users WHERE id = ?");
 $stmt2->bind_param('i', $userId);
 $stmt2->execute();
 $user = $stmt2->get_result()->fetch_assoc();
@@ -49,11 +50,6 @@ ob_start();
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h3 class="mb-1">Welcome, <?= htmlspecialchars($user['username']) ?>!</h3>
-                            <p class="mb-0 opacity-75">
-                                <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($user['email']) ?>
-                                &nbsp;|&nbsp;
-                                <i class="bi bi-telephone me-1"></i><?= htmlspecialchars($user['phone']) ?>
-                            </p>
                             <p class="mb-0 opacity-75 small mt-1">
                                 Registered on <?= date('d M Y', strtotime($user['created_at'])) ?>
                             </p>
@@ -84,6 +80,13 @@ ob_start();
 
     <?php include __DIR__ . '/views/partials/flash.php'; ?>
 
+    <?php if (!$registrationOpen): ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <i class="bi bi-lock-fill me-2"></i>
+        <strong>Registration is currently closed.</strong> New applications and personal, academic, and document submissions are disabled. Applicants who have completed their documents may still make payment.
+    </div>
+    <?php endif; ?>
+
     <!-- Step Action Cards -->
     <div class="row g-3">
         <!-- Personal Details -->
@@ -99,7 +102,7 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Personal Details</h6>
                     <p class="text-muted small mb-3">Name, DOB, family info, address</p>
-                    <?php if ($currentStep >= 1): ?>
+                    <?php if ($currentStep >= 1 && $registrationOpen): ?>
                         <?php if ($editAccess): ?>
                         <a href="<?= route('registration') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
@@ -109,10 +112,14 @@ ob_start();
                             <i class="bi bi-eye me-1"></i>View
                         </a>
                         <?php endif; ?>
-                    <?php elseif ($currentStep === 0): ?>
+                    <?php elseif ($currentStep >= 1): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
+                    <?php elseif ($currentStep === 0 && $registrationOpen): ?>
                         <a href="<?= route('registration') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Start
                         </a>
+                    <?php elseif (!$registrationOpen): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
                     <?php else: ?>
                         <button class="btn btn-sm btn-secondary" disabled>Locked</button>
                     <?php endif; ?>
@@ -133,7 +140,7 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Academic Details</h6>
                     <p class="text-muted small mb-3">HSLC, HSSLC, Degree, GUBEDCET</p>
-                    <?php if ($currentStep >= 2): ?>
+                    <?php if ($currentStep >= 2 && $registrationOpen): ?>
                         <?php if ($editAccess): ?>
                         <a href="<?= route('academics') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
@@ -143,10 +150,14 @@ ob_start();
                             <i class="bi bi-eye me-1"></i>View
                         </a>
                         <?php endif; ?>
-                    <?php elseif ($currentStep === 1): ?>
+                    <?php elseif ($currentStep >= 2): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
+                    <?php elseif ($currentStep === 1 && $registrationOpen): ?>
                         <a href="<?= route('academics') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Fill Now
                         </a>
+                    <?php elseif (!$registrationOpen): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
                     <?php else: ?>
                         <button class="btn btn-sm btn-secondary" disabled>Locked</button>
                     <?php endif; ?>
@@ -167,7 +178,7 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Upload Documents</h6>
                     <p class="text-muted small mb-3">Photo, signature, certificates</p>
-                    <?php if ($currentStep >= 3): ?>
+                    <?php if ($currentStep >= 3 && $registrationOpen): ?>
                         <?php if ($editAccess): ?>
                         <a href="<?= route('documents') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
@@ -177,10 +188,14 @@ ob_start();
                             <i class="bi bi-eye me-1"></i>View
                         </a>
                         <?php endif; ?>
-                    <?php elseif ($currentStep === 2): ?>
+                    <?php elseif ($currentStep >= 3): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
+                    <?php elseif ($currentStep === 2 && $registrationOpen): ?>
                         <a href="<?= route('documents') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Upload
                         </a>
+                    <?php elseif (!$registrationOpen): ?>
+                        <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
                     <?php else: ?>
                         <button class="btn btn-sm btn-secondary" disabled>Locked</button>
                     <?php endif; ?>
@@ -226,9 +241,9 @@ ob_start();
             <div class="card border-0 shadow-sm" style="border-left:4px solid #198754 !important;">
                 <div class="card-body p-4">
                     <h5 class="text-success mb-3"><i class="bi bi-patch-check-fill me-2"></i>Application Successfully Submitted</h5>
-                    <p class="text-muted mb-2">Your application for B.Ed. First Year 2026-2027 admission has been successfully submitted. Keep the following information for reference:</p>
+                    <p class="text-muted mb-2">Your application for B.Ed admission 2026-27 has been successfully submitted. Keep the following information for reference:</p>
                     <ul class="list-unstyled text-muted mb-4">
-                        <li><i class="bi bi-dot me-1"></i>You will receive a confirmation email at <strong><?= htmlspecialchars($user['email']) ?></strong></li>
+                        <li><i class="bi bi-dot me-1"></i>You will receive a confirmation email with your application details</li>
                         <li><i class="bi bi-dot me-1"></i>Keep your application number handy for future correspondence</li>
                         <li><i class="bi bi-dot me-1"></i>Merit list will be published as per GUBEDCET 2026 guidelines</li>
                     </ul>

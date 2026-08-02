@@ -5,6 +5,17 @@
 
 USE `rangiatt_2026`;
 
+-- 0) Admin-controlled registration availability
+CREATE TABLE IF NOT EXISTS `site_settings` (
+  `setting_key`   VARCHAR(100) NOT NULL,
+  `setting_value` VARCHAR(255) NOT NULL DEFAULT '',
+  `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `site_settings` (`setting_key`, `setting_value`)
+VALUES ('registration_open', '1');
+
 -- 1) Admin-managed home marquee items
 CREATE TABLE IF NOT EXISTS `home_marquee_items` (
   `id`          INT(11)      NOT NULL AUTO_INCREMENT,
@@ -18,11 +29,15 @@ CREATE TABLE IF NOT EXISTS `home_marquee_items` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+UPDATE `home_marquee_items`
+SET `content` = REPLACE(REPLACE(`content`, 'B.Ed. First Year', 'B.Ed admission'), '2026-2027', '2026-27')
+WHERE `content` LIKE '%B.Ed. First Year%' OR `content` LIKE '%2026-2027%';
+
 -- Seed defaults if empty
 INSERT INTO `home_marquee_items` (`content`, `sort_order`, `is_active`)
 SELECT seed.`content`, seed.`sort_order`, seed.`is_active`
 FROM (
-  SELECT 'Welcome to the Official Admission Portal for the B.Ed. First Year (2026-2027) of Rangia Teacher Training College' AS `content`, 10 AS `sort_order`, 1 AS `is_active`
+  SELECT 'Welcome to the Official Admission Portal for B.Ed admission 2026-27 of Rangia Teacher Training College' AS `content`, 10 AS `sort_order`, 1 AS `is_active`
   UNION ALL
   SELECT 'Registration fee of Rs 500 is required after form submission. Applications without payment will be rejected.' AS `content`, 20 AS `sort_order`, 1 AS `is_active`
   UNION ALL
@@ -68,6 +83,8 @@ ALTER TABLE `academic_details`
   ADD COLUMN IF NOT EXISTS `gu_registered`        VARCHAR(3)   NOT NULL DEFAULT 'no'  COMMENT 'yes/no - already registered in GU',
   ADD COLUMN IF NOT EXISTS `migrated`             VARCHAR(3)   NOT NULL DEFAULT 'no'  COMMENT 'yes/no - migrated from GU',
   ADD COLUMN IF NOT EXISTS `other_university`     VARCHAR(255)          DEFAULT NULL  COMMENT 'Other university name if migrated',
-  ADD COLUMN IF NOT EXISTS `gubedcet_name`        VARCHAR(255)          DEFAULT NULL  COMMENT 'Candidate name from GUBEDCET result',
-  ADD COLUMN IF NOT EXISTS `gubedcet_category`    VARCHAR(100)          DEFAULT NULL  COMMENT 'Category from GUBEDCET result',
-  ADD COLUMN IF NOT EXISTS `academic_declaration` TINYINT(1)   NOT NULL DEFAULT 0     COMMENT '1 = student confirmed details are correct';
+   ADD COLUMN IF NOT EXISTS `gubedcet_name`        VARCHAR(255)          DEFAULT NULL  COMMENT 'Candidate name from GUBEDCET result',
+   ADD COLUMN IF NOT EXISTS `gubedcet_category`    VARCHAR(100)          DEFAULT NULL  COMMENT 'Category from GUBEDCET result',
+   ADD COLUMN IF NOT EXISTS `gubedcet_gender`      VARCHAR(20)           DEFAULT NULL  COMMENT 'Gender from GUBEDCET result',
+   ADD COLUMN IF NOT EXISTS `gubedcet_booklet_series` VARCHAR(10)        DEFAULT NULL  COMMENT 'Question booklet series from GUBEDCET result',
+   ADD COLUMN IF NOT EXISTS `academic_declaration` TINYINT(1)   NOT NULL DEFAULT 0     COMMENT '1 = student confirmed details are correct';

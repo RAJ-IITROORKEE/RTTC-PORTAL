@@ -7,6 +7,7 @@ SecurityHelper::requireAuth();
 $db     = db();
 $userId = SessionHelper::get('user_id');
 $errors = [];
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 $religionOptions = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Others'];
 
 // Check if already have personal details
@@ -40,6 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
 
+    if (!$registrationOpen) {
+        redirect(route('welcome'), [], 'error', 'Registration is currently closed. Personal details cannot be submitted now.');
+    }
+
     $d = [];
     $fields = [
         'firstname','middlename','lastname','fathersname','foccupation','fcontact','fqualifications',
@@ -52,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $d[$f] = SecurityHelper::sanitize($_POST[$f] ?? '');
     }
     $d['ews']     = isset($_POST['ews']) ? 1 : 0;
-    $d['obc_ncl'] = isset($_POST['obc_ncl']) ? 1 : 0;
+    $d['obc_ncl'] = 0;
     $d['pwd']     = isset($_POST['pwd']) ? 1 : 0;
     $d['declaration_confirm'] = isset($_POST['declaration_confirm']) ? 1 : 0;
 
@@ -83,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($d['declaration_confirm'])) {
         $errors['declaration_confirm'] = 'You must declare that the entered information is authentic.';
     }
+
+    $d['obc_ncl'] = (($d['caste'] ?? '') === 'OBC (Non-creamy layer)') ? 1 : 0;
 
     if (empty($errors)) {
         if ($existing) {
@@ -183,6 +190,13 @@ ob_start();
     </div>
     <?php endif; ?>
 
+    <?php if (!$registrationOpen): ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <i class="bi bi-lock-fill me-2"></i>
+        <strong>Registration is currently closed.</strong> Personal details cannot be submitted or edited until registration is reopened by the administrator.
+    </div>
+    <?php endif; ?>
+
     <form method="POST" action="<?= route('registration') ?>" id="personalForm" novalidate<?= $viewOnly ? ' data-viewonly="1"' : '' ?>>
         <?= SecurityHelper::csrfField() ?>
 
@@ -278,11 +292,6 @@ ob_start();
                                 <input class="form-check-input" type="checkbox" name="ews" id="ewsCheck" value="1"
                                        <?= !empty($data['ews']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="ewsCheck">EWS (Economically Weaker Section)</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="obc_ncl" id="obcCheck" value="1"
-                                       <?= !empty($data['obc_ncl']) ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="obcCheck">OBC (Non-Creamy Layer)</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="pwd" id="pwdCheck" value="1"
@@ -469,7 +478,7 @@ ob_start();
                 <button type="button" id="previewBtn" class="btn btn-outline-primary btn-lg px-4">
                     <i class="bi bi-eye me-1"></i>Preview
                 </button>
-                <?php if (!$viewOnly): ?>
+                <?php if (!$viewOnly && $registrationOpen): ?>
                 <button type="button" id="openConfirmBtn" class="btn btn-primary btn-lg px-5"
                         <?= empty($data['declaration_confirm']) ? 'disabled' : '' ?>>
                     Save & Continue <i class="bi bi-arrow-right ms-1"></i>
@@ -651,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ['Religion',        religion],
             ['Caste/Category',  getFieldValue('caste')],
             ['EWS',             getCheckboxValue('ews') === 'Yes' ? 'Yes' : null],
-            ['OBC-NCL',         getCheckboxValue('obc_ncl') === 'Yes' ? 'Yes' : null],
+            ['OBC-NCL',         getFieldValue('caste') === 'OBC (Non-creamy layer)' ? 'Yes' : null],
             ['PWD',             getCheckboxValue('pwd') === 'Yes' ? 'Yes' : null],
         ]);
 

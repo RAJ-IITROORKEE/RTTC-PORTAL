@@ -87,7 +87,7 @@ ob_start();
           <div class="auth-header">
             <img src="<?= rtrim(APP_URL,'/') ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
             <h4>Student Login</h4>
-            <small>Rangia Teacher Training College – B.Ed. 2026-2027</small>
+            <small>Rangia Teacher Training College - B.Ed admission 2026-27</small>
           </div>
 
           <div class="card-body">

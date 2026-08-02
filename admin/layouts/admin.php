@@ -1,3 +1,10 @@
+<?php
+$pendingQueryCount = 0;
+$queryCountResult = ($db ?? db())->query("SELECT COUNT(*) AS total FROM student_queries WHERE status = 'pending'");
+if ($queryCountResult) {
+    $pendingQueryCount = (int)($queryCountResult->fetch_assoc()['total'] ?? 0);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,6 +62,9 @@
         <div class="nav-section-label">Support</div>
         <a href="<?= route('admin.queries') ?>" class="sidebar-link <?= ($activePage ?? '') === 'queries' ? 'active' : '' ?>">
             <i class="bi bi-chat-left-dots-fill"></i><span>Student Queries</span>
+            <?php if ($pendingQueryCount > 0): ?>
+                <span class="badge rounded-pill bg-danger ms-auto" aria-label="<?= $pendingQueryCount ?> pending queries"><?= $pendingQueryCount ?></span>
+            <?php endif; ?>
         </a>
 
         <div class="nav-section-label">Tools</div>

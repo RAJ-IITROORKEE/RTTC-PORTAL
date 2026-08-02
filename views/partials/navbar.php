@@ -5,6 +5,7 @@
 $isLoggedIn = SessionHelper::isLoggedIn();
 $username   = SessionHelper::get('username', '');
 $progress   = SessionHelper::getProgress();
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 $baseUrl    = rtrim(APP_URL, '/');
 ?>
 <nav class="navbar navbar-expand-lg rttc-navbar sticky-top">
@@ -14,7 +15,7 @@ $baseUrl    = rtrim(APP_URL, '/');
       <img src="<?= $baseUrl ?>/assets/img/RTTC_logo.jpeg" alt="RTTC Logo">
       <span>
         <span class="d-block" style="font-size:1rem;line-height:1.2;">Rangia TTC</span>
-        <small class="d-block fw-normal" style="font-size:.72rem;opacity:.75;">B.Ed. Admission 2026-2027</small>
+        <small class="d-block fw-normal" style="font-size:.72rem;opacity:.75;">B.Ed admission 2026-27</small>
       </span>
     </a>
 
@@ -38,7 +39,7 @@ $baseUrl    = rtrim(APP_URL, '/');
               <i class="bi bi-grid-1x2 me-1"></i>Dashboard
             </a>
           </li>
-          <?php if ($progress < 4): ?>
+          <?php if ($registrationOpen && $progress < 4): ?>
           <li class="nav-item">
             <a class="nav-link <?= $activeNav === 'registration' ? 'active' : '' ?>" href="<?= route('registration') ?>">
               <i class="bi bi-person-lines-fill me-1"></i>Registration
@@ -69,11 +70,13 @@ $baseUrl    = rtrim(APP_URL, '/');
           <li class="nav-item">
             <a class="nav-link" href="<?= route('login') ?>"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
           </li>
+          <?php if ($registrationOpen): ?>
           <li class="nav-item ms-1">
             <a class="btn btn-rttc-primary btn-sm px-3" href="<?= route('signup') ?>">
               <i class="bi bi-person-plus me-1"></i>Register
             </a>
           </li>
+          <?php endif; ?>
         <?php endif; ?>
       </ul>
     </div>

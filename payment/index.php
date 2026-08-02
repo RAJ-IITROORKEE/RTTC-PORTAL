@@ -100,12 +100,8 @@ ob_start();
                             <td class="fw-semibold"><?= htmlspecialchars($user['firstname'] . ' ' . ($user['lastname'] ?? $user['username'])) ?></td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Email</td>
-                            <td><?= htmlspecialchars($user['email']) ?></td>
-                        </tr>
-                        <tr>
                             <td class="text-muted">Application For</td>
-                            <td>B.Ed. First Year 2026-2027</td>
+                            <td>B.Ed admission 2026-27</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Amount</td>
@@ -149,7 +145,7 @@ const options = {
     amount: <?= $amount ?>,
     currency: '<?= $currency ?>',
     name: 'RTTC Admission 2026',
-    description: 'B.Ed. First Year Application Fee',
+    description: 'B.Ed admission 2026-27 application fee',
     image: '<?= BASE_URL ?>/assets/img/RTTC_logo.jpeg',
     order_id: '<?= $orderData['id'] ?>',
     handler: function(response) {

@@ -46,6 +46,7 @@ DROP TABLE IF EXISTS `documents`;
 DROP TABLE IF EXISTS `academic_details`;
 DROP TABLE IF EXISTS `personal_details`;
 DROP TABLE IF EXISTS `registration_progress`;
+DROP TABLE IF EXISTS `site_settings`;
 DROP TABLE IF EXISTS `otp_tokens`;
 DROP TABLE IF EXISTS `admin_users`;
 DROP TABLE IF EXISTS `users`;
@@ -133,6 +134,20 @@ CREATE TABLE `registration_progress` (
   CONSTRAINT `fk_progress_user`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- TABLE: site_settings
+-- Purpose: Admin-controlled portal settings
+-- ============================================================
+CREATE TABLE `site_settings` (
+  `setting_key`   VARCHAR(100) NOT NULL,
+  `setting_value` VARCHAR(255) NOT NULL DEFAULT '',
+  `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `site_settings` (`setting_key`, `setting_value`)
+VALUES ('registration_open', '1');
 
 -- ============================================================
 -- TABLE: personal_details

@@ -1,5 +1,16 @@
 -- Create CORRECT missing tables for RTTC 2026
 
+CREATE TABLE IF NOT EXISTS `site_settings` (
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` varchar(255) NOT NULL DEFAULT '',
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `site_settings` (`setting_key`, `setting_value`) VALUES
+('registration_open', '1')
+ON DUPLICATE KEY UPDATE `setting_key` = VALUES(`setting_key`);
+
 -- Drop old tables if they exist (to recreate with correct columns)
 DROP TABLE IF EXISTS `home_marquee_items`;
 DROP TABLE IF EXISTS `notice_documents`;
@@ -34,14 +45,18 @@ CREATE TABLE `notice_documents` (
   UNIQUE KEY `doc_key` (`doc_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+UPDATE `home_marquee_items`
+SET `content` = REPLACE(REPLACE(`content`, 'B.Ed. First Year', 'B.Ed admission'), '2026-2027', '2026-27')
+WHERE `content` LIKE '%B.Ed. First Year%' OR `content` LIKE '%2026-2027%';
+
 -- Insert sample data for home_marquee_items
 INSERT INTO `home_marquee_items` (`content`, `link_url`, `link_label`, `sort_order`, `is_active`) VALUES 
 ('Welcome to RTTC 2026 B.Ed. Admission Portal', '', '', 1, 1),
-('Apply Now for B.Ed. First Year 2026-2027', '', '', 2, 1),
+('Apply Now for B.Ed admission 2026-27', '', '', 2, 1),
 ('Last date for application: Extended till further notice', '', '', 3, 1);
 
 -- Insert sample data for notice_documents
 INSERT INTO `notice_documents` (`doc_key`, `title`, `button_label`, `file_path`, `link_url`, `sort_order`, `is_active`) VALUES 
-('admission_notice', 'Admission Notice 2026-2027', 'Download', '/storage/uploads/notices/admission_notice.pdf', '', 1, 1),
+('admission_notice', 'Admission Notice 2026-27', 'Download', '/storage/uploads/notices/admission_notice.pdf', '', 1, 1),
 ('cutoff_marks', 'Cutoff Marks', 'Download', '/storage/uploads/notices/cutoff_marks.pdf', '', 2, 1),
 ('merit_list', 'Merit List', 'Download', '/storage/uploads/notices/merit_list.pdf', '', 3, 1);

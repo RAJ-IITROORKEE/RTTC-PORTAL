@@ -19,7 +19,11 @@ if (empty($email) || !ValidationHelper::validateEmail($email)) {
 }
 
 if ($type === 'signup') {
-    $result = OTPHelper::sendSignupOTP($email, $name);
+    if (!SiteSettingsHelper::isRegistrationOpen()) {
+        $result = ['success' => false, 'message' => 'Registration is currently closed.'];
+    } else {
+        $result = OTPHelper::sendSignupOTP($email, $name);
+    }
 } elseif ($type === 'reset') {
     $result = OTPHelper::sendPasswordResetOTP($email);
 } else {

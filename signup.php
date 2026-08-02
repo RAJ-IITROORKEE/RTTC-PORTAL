@@ -3,6 +3,7 @@ define('APP_INIT', true);
 require_once __DIR__ . '/config/init.php';
 
 SecurityHelper::requireGuest();
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 
 $step = $_SESSION['signup_step'] ?? 1; // 1=form, 2=otp-verify
 $errors = [];
@@ -11,6 +12,10 @@ $old = [];
 // Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
+
+    if (!$registrationOpen) {
+        redirect(route('signup'), [], 'error', 'Registration is currently closed. Please check again later.');
+    }
 
     $action = $_POST['action'] ?? '';
 
@@ -152,7 +157,13 @@ ob_start();
 
                     <?php include __DIR__ . '/views/partials/flash.php'; ?>
 
-                    <?php if ($step === 1): ?>
+                    <?php if (!$registrationOpen): ?>
+                    <div class="alert alert-warning border-0">
+                        <i class="bi bi-lock-fill me-2"></i>
+                        <strong>Registration is currently closed.</strong>
+                        New accounts and applications cannot be started at this time.
+                    </div>
+                    <?php elseif ($step === 1): ?>
                     <!-- SIGNUP FORM -->
                     <form method="POST" action="<?= route('signup') ?>" id="signupForm" novalidate>
                         <?= SecurityHelper::csrfField() ?>

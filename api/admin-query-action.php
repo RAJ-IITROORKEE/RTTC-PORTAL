@@ -19,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $action  = trim($_POST['action']   ?? '');
 $queryId = (int)($_POST['query_id'] ?? 0);
-$userId  = (int)($_POST['user_id'] ?? 0);
 
 if (!$queryId || !in_array($action, ['mark_resolved', 'grant_access', 'delete'], true)) {
     echo json_encode(['success' => false, 'message' => 'Invalid request.']);
@@ -54,11 +53,13 @@ switch ($action) {
         break;
 
     case 'grant_access':
-        if (!$userId && !$query['user_id']) {
+        if (!$query['user_id']) {
             echo json_encode(['success' => false, 'message' => 'No associated student account found.']);
             break;
         }
-        $targetUserId = $userId ?: $query['user_id'];
+        // Always grant access to the student who owns the query. Do not trust
+        // a client-supplied user ID from the admin page.
+        $targetUserId = (int)$query['user_id'];
         $adminId      = SessionHelper::get('admin_id');
         $expiresAt    = date('Y-m-d H:i:s', strtotime('+7 days'));
         $note         = 'Granted via admin action (Query #' . $queryId . ')';

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/init.php';
 
 $isLoggedIn = SessionHelper::isLoggedIn();
+$registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 $progress   = SessionHelper::getProgress();
 
 // Sync progress from DB if logged in
@@ -93,8 +94,6 @@ ob_start();
         </div>
         <hr>
         <p class="mb-1"><i class="bi bi-geo-alt-fill me-2 text-primary"></i><?= COLLEGE_ADDRESS ?></p>
-        <p class="mb-1"><i class="bi bi-telephone-fill me-2 text-primary"></i><?= CONTACT_PHONE ?></p>
-        <p class="mb-0"><i class="bi bi-envelope-fill me-2 text-primary"></i><?= CONTACT_EMAIL ?></p>
       </div>
     </div>
     <!-- Notice -->
@@ -108,8 +107,8 @@ ob_start();
           <li>Minimum marks criteria must be fulfilled as per category.</li>
         </ul>
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 p-2 rounded-3" style="background:#edf8f1;border:1px solid rgba(25,135,84,.22);">
-          <span class="small text-success fw-semibold">
-            <i class="bi bi-chat-dots-fill me-1"></i>Facing any issue? Raise a query to the admin for help.
+           <span class="small text-success fw-semibold">
+             <i class="bi bi-chat-dots-fill me-1"></i>Facing any issue? Raise a query for help.
           </span>
           <a href="<?= htmlspecialchars($raiseQueryUrl) ?>" class="btn btn-sm btn-success fw-semibold px-3">
             <i class="bi bi-send me-1"></i>Raise Query
@@ -150,7 +149,7 @@ ob_start();
           </div>
           <h4 class="fw-bold" style="color:var(--rttc-primary);">New Registration</h4>
           <p class="text-muted mb-3" style="font-size:.9rem;">
-            Apply for B.Ed. First Year admission (2026-2027). Complete your application in four guided steps.
+             Apply for B.Ed admission 2026-27. Complete your application in four guided steps.
           </p>
           <div class="row g-2 text-start">
             <?php foreach ([
@@ -173,7 +172,11 @@ ob_start();
             <?php endforeach; ?>
           </div>
         </div>
-        <?php if ($isLoggedIn): ?>
+        <?php if (!$registrationOpen): ?>
+          <button type="button" class="btn btn-secondary mt-3" disabled>
+            <i class="bi bi-lock-fill me-2"></i>Registration Closed
+          </button>
+        <?php elseif ($isLoggedIn): ?>
           <a href="<?= route('welcome') ?>" class="btn btn-rttc-primary mt-3">
             <i class="bi bi-arrow-right-circle me-2"></i>Continue Registration
           </a>

@@ -9,9 +9,7 @@
                style="height:42px;width:42px;border-radius:50%;border:2px solid rgba(255,255,255,.5);">
           <strong style="font-size:1rem;">Rangia Teacher Training College</strong>
         </div>
-        <small><?= COLLEGE_ADDRESS ?></small><br>
-        <small><i class="bi bi-telephone me-1"></i><?= CONTACT_PHONE ?></small><br>
-        <small><i class="bi bi-envelope me-1"></i><?= CONTACT_EMAIL ?></small>
+         <small><?= COLLEGE_ADDRESS ?></small>
       </div>
       <!-- Quick Links -->
       <div class="col-md-4">
@@ -19,7 +17,9 @@
         <ul class="list-unstyled mb-0" style="font-size:.87rem;">
           <li><a href="<?= route('home') ?>"><i class="bi bi-chevron-right me-1"></i>Home</a></li>
           <li><a href="<?= route('login') ?>"><i class="bi bi-chevron-right me-1"></i>Applicant Login</a></li>
-          <li><a href="<?= route('signup') ?>"><i class="bi bi-chevron-right me-1"></i>New Registration</a></li>
+           <?php if (SiteSettingsHelper::isRegistrationOpen()): ?>
+           <li><a href="<?= route('signup') ?>"><i class="bi bi-chevron-right me-1"></i>New Registration</a></li>
+           <?php endif; ?>
           <li><a href="http://www.rangiattcollege.in" target="_blank"><i class="bi bi-chevron-right me-1"></i>College Website</a></li>
         </ul>
       </div>
@@ -27,7 +27,7 @@
       <div class="col-md-4">
         <h6 class="fw-bold mb-2 text-white">Important</h6>
         <ul class="list-unstyled mb-0" style="font-size:.87rem;">
-          <li><i class="bi bi-dot me-1"></i>B.Ed. First Year Admission 2026-2027</li>
+           <li><i class="bi bi-dot me-1"></i>B.Ed admission 2026-27</li>
           <li><i class="bi bi-dot me-1"></i>GUBEDCET 2026 Based Admission</li>
           <li><i class="bi bi-dot me-1"></i>Registration fee: ₹500 (non-refundable)</li>
           <li><i class="bi bi-dot me-1"></i>Pay via registered phone number only</li>

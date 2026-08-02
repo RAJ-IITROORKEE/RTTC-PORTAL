@@ -98,6 +98,19 @@ CREATE TABLE IF NOT EXISTS `registration_progress` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- TABLE: site_settings (admin-controlled portal settings)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `site_settings` (
+  `setting_key`   VARCHAR(100) NOT NULL,
+  `setting_value` VARCHAR(255) NOT NULL DEFAULT '',
+  `updated_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `site_settings` (`setting_key`, `setting_value`)
+VALUES ('registration_open', '1');
+
+-- ============================================================
 -- TABLE: personal_details
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `personal_details` (
@@ -191,13 +204,21 @@ CREATE TABLE IF NOT EXISTS `academic_details` (
   -- Gauhati University
   `gu_reg_no`               VARCHAR(50)            DEFAULT NULL,
   `gu_reg_year`             VARCHAR(4)             DEFAULT NULL,
+  `gu_registered`            VARCHAR(3)             NOT NULL DEFAULT 'no',
+  `migrated`                 VARCHAR(3)             NOT NULL DEFAULT 'no',
+  `other_university`         VARCHAR(255)           DEFAULT NULL,
   -- GUBEDCET 2026
   `gubedcet_rollno`         VARCHAR(50)            DEFAULT NULL,
+  `gubedcet_name`           VARCHAR(255)           DEFAULT NULL,
+  `gubedcet_category`       VARCHAR(100)           DEFAULT NULL,
+  `gubedcet_gender`         VARCHAR(20)            DEFAULT NULL,
+  `gubedcet_booklet_series` VARCHAR(10)            DEFAULT NULL,
   `gubedcet_marks`          DECIMAL(6,2)           DEFAULT NULL,
   `gubedcet_rank`           INT(11)                DEFAULT NULL,
   `gubedcet_correct`        INT(5)                 DEFAULT NULL,
   `gubedcet_wrong`          INT(5)                 DEFAULT NULL,
   `gubedcet_unattempted`    INT(5)                 DEFAULT NULL,
+  `academic_declaration`    TINYINT(1)             NOT NULL DEFAULT 0,
   -- Timestamps
   `created_at`              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

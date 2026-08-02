@@ -4,35 +4,31 @@
  */
 require_once __DIR__ . '/config/init.php';
 
-$isLoggedIn = SessionHelper::isLoggedIn();
+SecurityHelper::requireAuth();
+$isLoggedIn = true;
 $prefillName  = '';
-$prefillEmail = '';
-$prefillPhone = '';
 
 if ($isLoggedIn) {
     $userId = SessionHelper::get('user_id');
 
-    // Get email, username, and phone from users table
-    $stmt = $conn->prepare("SELECT username, email, phone FROM users WHERE id = ? LIMIT 1");
+    // Contact details are kept server-side and are not shown in the form.
+    $stmt = $conn->prepare("SELECT username FROM users WHERE id = ? LIMIT 1");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $uRow = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if ($uRow) {
-        $prefillEmail = $uRow['email'];
         $prefillName  = $uRow['username'];
-        $prefillPhone = $uRow['phone'] ?? '';
     }
 
-    // Override name/phone with personal_details if filled
-    $stmt = $conn->prepare("SELECT firstname, middlename, lastname, emergency_contact FROM personal_details WHERE user_id = ? LIMIT 1");
+    // Override the display name with the submitted personal name when available.
+    $stmt = $conn->prepare("SELECT firstname, middlename, lastname FROM personal_details WHERE user_id = ? LIMIT 1");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $pRow = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if ($pRow) {
         $prefillName  = trim($pRow['firstname'] . ' ' . $pRow['middlename'] . ' ' . $pRow['lastname']);
-        $prefillPhone = $pRow['emergency_contact'] ?? $prefillPhone;
     }
 }
 
@@ -60,7 +56,7 @@ ob_start();
     <div class="alert alert-info border-0 d-flex gap-3 align-items-start mb-4" style="border-radius:12px; background:#e8f4fd;">
       <i class="bi bi-info-circle-fill fs-5 mt-1 text-info flex-shrink-0"></i>
       <div>
-        <strong>How it works:</strong> Once you submit a query, our admin team will review it. If edit access to your registration is needed, it will be granted after review. You will receive a reply on your email.
+         <strong>How it works:</strong> Once you submit a query, our admin team will review it. If edit access to your registration is needed, it will be granted after review.
       </div>
     </div>
 
@@ -95,23 +91,6 @@ ob_start();
                      value="<?= htmlspecialchars($prefillName) ?>"
                      placeholder="Enter your full name" required maxlength="120">
               <div class="invalid-feedback">Please enter your full name.</div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-              <input type="email" class="form-control" name="email" id="qEmail"
-                     value="<?= htmlspecialchars($prefillEmail) ?>"
-                     placeholder="Enter your email" required maxlength="180">
-              <div class="invalid-feedback">Please enter a valid email address.</div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Phone Number</label>
-              <input type="tel" class="form-control" name="phone" id="qPhone"
-                     value="<?= htmlspecialchars($prefillPhone) ?>"
-                     placeholder="10-digit mobile number" maxlength="15"
-                     pattern="[0-9]{10}">
-              <div class="invalid-feedback">Enter a valid 10-digit phone number.</div>
             </div>
 
             <div class="mb-3">
@@ -199,8 +178,7 @@ $extraFoot = <<<JS
 
   const requiredFields = [
     { id: 'qName', type: 'text', minLen: 1 },
-    { id: 'qEmail', type: 'email', minLen: 1 },
-    { id: 'qSubject', type: 'select', minLen: 1 },
+     { id: 'qSubject', type: 'select', minLen: 1 },
     { id: 'qMessage', type: 'textarea', minLen: 20 }
   ];
 
@@ -259,22 +237,6 @@ $extraFoot = <<<JS
       const isValid = validateField(field);
       if (!isValid) allValid = false;
     });
-
-    // Optional: validate phone if filled
-    const phoneEl = document.getElementById('qPhone');
-    if (phoneEl && phoneEl.value.trim() !== '') {
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(phoneEl.value.trim())) {
-        phoneEl.classList.add('is-invalid');
-        phoneEl.classList.remove('is-valid');
-        allValid = false;
-      } else {
-        phoneEl.classList.remove('is-invalid');
-        phoneEl.classList.add('is-valid');
-      }
-    } else if (phoneEl) {
-      phoneEl.classList.remove('is-invalid', 'is-valid');
-    }
 
     if (allValid) {
       submitBtn.disabled = false;
