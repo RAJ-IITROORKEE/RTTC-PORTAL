@@ -22,6 +22,8 @@ assertPaymentContract(strpos($paymentPage, 'RAZORPAY_AMOUNT') !== false, 'checko
 assertPaymentContract(strpos($paymentPage, "status = 'pending'") !== false && strpos($paymentPage, '30 MINUTE') !== false, 'checkout reuses recent pending orders');
 assertPaymentContract(strpos($paymentPage, 'PaymentHelper::fetchOrder') !== false, 'checkout validates reused orders with current credentials');
 assertPaymentContract(strpos($paymentPage, 'displayAmount') !== false, 'payment display uses configured amount');
+assertPaymentContract(strpos($paymentPage, 'success@razorpay') !== false, 'test checkout explains how to create a successful test payment');
+assertPaymentContract(strpos($paymentPage, "rzp.on('payment.failed'") !== false, 'checkout reports failed payment attempts');
 assertPaymentContract(strpos($paymentPage, "CURLOPT_SSL_VERIFYPEER => false") === false, 'checkout keeps TLS verification enabled');
 assertPaymentContract(strpos($paymentPage, "INSERT INTO payment") !== false, 'checkout persists a pending order');
 assertPaymentContract(strpos($processApi, 'WHERE user_id = ? AND razorpay_order_id = ?') !== false, 'callback binds order to current user');

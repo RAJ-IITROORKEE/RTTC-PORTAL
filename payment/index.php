@@ -39,6 +39,7 @@ $razorpayKey = RAZORPAY_KEY_ID;
 $amount      = RAZORPAY_AMOUNT;
 $currency    = 'INR';
 $displayAmount = number_format($amount / 100, 2, '.', '');
+$isTestMode = str_starts_with($razorpayKey, 'rzp_test_');
 
 // Reuse a recent pending order so refreshing the page cannot create duplicate charges.
 $pendingStmt = $db->prepare("SELECT id, razorpay_order_id, amount, currency
@@ -199,6 +200,17 @@ ob_start();
 
                     <hr>
 
+                    <?php if ($isTestMode): ?>
+                    <div class="alert alert-info border-0" role="alert">
+                        <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-2"></i>Razorpay Test Mode</div>
+                        <div class="small">
+                            No real money is transferred. Do not scan the QR with a real UPI app.
+                            Select UPI and enter <code>success@razorpay</code> for success or
+                            <code>failure@razorpay</code> for failure.
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="alert alert-warning border-0">
                         <i class="bi bi-shield-check me-2"></i>
                         Secure payment powered by <strong>Razorpay</strong>. Your payment info is encrypted and secure.
@@ -265,6 +277,14 @@ const options = {
     }
 };
 const rzp = new Razorpay(options);
+rzp.on('payment.failed', function(response) {
+    const error = response.error || {};
+    const description = error.description || 'The payment attempt failed. Please try again.';
+    const button = document.getElementById('payBtn');
+    button.disabled = false;
+    button.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Pay ₹<?= $displayAmount ?> Securely';
+    window.alert(description);
+});
 document.getElementById('payBtn').addEventListener('click', function() {
     this.disabled = true;
     this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Opening payment gateway...';
