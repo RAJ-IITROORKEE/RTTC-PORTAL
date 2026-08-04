@@ -70,8 +70,7 @@ if (
     !$gatewayPayment
     || ($gatewayPayment['id'] ?? '') !== $paymentId
     || ($gatewayPayment['order_id'] ?? '') !== $orderId
-    || (int)($gatewayPayment['amount'] ?? 0) !== (int)$payment['amount']
-    || ($gatewayPayment['currency'] ?? '') !== (string)$payment['currency']
+    || !PaymentHelper::matchesExpectedAmount($gatewayPayment, (int)$payment['amount'], (string)$payment['currency'])
     || ($gatewayPayment['status'] ?? '') !== 'captured'
 ) {
     $fail('Payment is not captured yet. If money was deducted, please contact us.');
@@ -91,6 +90,20 @@ if ($duplicate) {
 
 $paymentRowId = (int) $payment['id'];
 $db->begin_transaction();
+
+$applicantLock = $db->prepare("SELECT id FROM users WHERE id = ? FOR UPDATE");
+if (!$applicantLock) {
+    $db->rollback();
+    $fail('Could not save payment. Please try again.');
+}
+$applicantLock->bind_param('i', $userId);
+$applicantLock->execute();
+$lockedApplicant = $applicantLock->get_result()->fetch_assoc();
+$applicantLock->close();
+if (!$lockedApplicant) {
+    $db->rollback();
+    $fail('Applicant account was not found. Please contact support.');
+}
 
 $lock = $db->prepare("SELECT status, razorpay_payment_id FROM payment
     WHERE id = ? AND user_id = ? FOR UPDATE");
@@ -113,6 +126,10 @@ if (($lockedPayment['status'] ?? '') === 'success') {
     }
     $fail('This payment order has already been completed.');
 }
+if (($lockedPayment['razorpay_payment_id'] ?? '') !== '' && $lockedPayment['razorpay_payment_id'] !== $paymentId) {
+    $db->rollback();
+    $fail('Payment verification failed. Please contact support.');
+}
 
 $successLock = $db->prepare("SELECT id FROM payment WHERE user_id = ? AND status = 'success' LIMIT 1 FOR UPDATE");
 if (!$successLock) {
@@ -124,8 +141,22 @@ $successLock->execute();
 $existingSuccess = $successLock->get_result()->fetch_assoc();
 $successLock->close();
 if ($existingSuccess) {
-    $db->rollback();
-    $fail('A payment has already been completed for this application.');
+    $duplicateUpdate = $db->prepare("UPDATE payment
+        SET razorpay_payment_id = ?, razorpay_signature = ?
+        WHERE id = ? AND status <> 'success'
+        AND (razorpay_payment_id IS NULL OR razorpay_payment_id = ?)");
+    if (!$duplicateUpdate) {
+        $db->rollback();
+        $fail('Could not record the additional payment. Please contact support.');
+    }
+    $duplicateUpdate->bind_param('ssis', $paymentId, $signature, $paymentRowId, $paymentId);
+    $duplicateSaved = $duplicateUpdate->execute();
+    $duplicateUpdate->close();
+    if (!$duplicateSaved || !$db->commit()) {
+        $db->rollback();
+        $fail('Could not record the additional payment. Please contact support.');
+    }
+    $fail('An application payment was already completed. Extra captured payment recorded; please contact support.');
 }
 
 $update = $db->prepare("UPDATE payment

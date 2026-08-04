@@ -53,5 +53,21 @@ assertPaymentSecurity(
     PaymentHelper::fetchOrder('', 'test-key', 'test-secret') === null,
     'order fetch rejects missing order ID'
 );
+assertPaymentSecurity(
+    PaymentHelper::matchesExpectedAmount(['amount' => 50000, 'fee' => 1180, 'currency' => 'INR'], 50000, 'INR'),
+    'merchant-borne fees preserve the exact order amount'
+);
+assertPaymentSecurity(
+    PaymentHelper::matchesExpectedAmount(['amount' => 51180, 'fee' => 1180, 'tax' => 180, 'currency' => 'INR'], 50000, 'INR'),
+    'customer-borne fees are excluded when matching the order amount'
+);
+assertPaymentSecurity(
+    !PaymentHelper::matchesExpectedAmount(['amount' => 51180, 'fee' => 1180, 'currency' => 'USD'], 50000, 'INR'),
+    'payment currency must match the order currency'
+);
+assertPaymentSecurity(
+    !PaymentHelper::matchesExpectedAmount(['amount' => 51180, 'fee' => 1000, 'currency' => 'INR'], 50000, 'INR'),
+    'unexplained payment amount differences are rejected'
+);
 
 echo "payment_security_test passed\n";

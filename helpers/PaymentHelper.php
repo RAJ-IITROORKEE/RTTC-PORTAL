@@ -46,6 +46,32 @@ class PaymentHelper
         return is_array($event) ? $event : null;
     }
 
+    public static function matchesExpectedAmount(
+        array $payment,
+        int $expectedAmount,
+        string $expectedCurrency
+    ): bool {
+        $rawAmount = $payment['amount'] ?? null;
+        if (
+            $expectedAmount <= 0
+            || $expectedCurrency === ''
+            || ($payment['currency'] ?? '') !== $expectedCurrency
+            || (!is_int($rawAmount) && !(is_string($rawAmount) && ctype_digit($rawAmount)))
+        ) {
+            return false;
+        }
+
+        $amount = (int)$rawAmount;
+        if ($amount === $expectedAmount) return true;
+
+        // When Razorpay charges its fee to the customer, Payment amount includes that fee.
+        $rawFee = $payment['fee'] ?? null;
+        if (!is_int($rawFee) && !(is_string($rawFee) && ctype_digit($rawFee))) return false;
+
+        $fee = (int)$rawFee;
+        return $fee > 0 && $amount - $fee === $expectedAmount;
+    }
+
     public static function fetchPayment(
         string $paymentId,
         string $keyId,

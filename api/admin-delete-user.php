@@ -24,21 +24,22 @@ if (!$userId) {
 }
 
 $db = db();
-
-// Verify user exists
-$chk = $db->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
-$chk->bind_param('i', $userId);
-$chk->execute();
-if (!$chk->get_result()->fetch_assoc()) {
-    $chk->close();
-    echo json_encode(['success' => false, 'message' => 'User not found.']);
-    exit;
-}
-$chk->close();
-
-// Delete in dependency order (child tables first, then users)
 $db->begin_transaction();
 try {
+    // Payment finalization uses this same applicant-first lock order.
+    $userLock = $db->prepare("SELECT id FROM users WHERE id = ? FOR UPDATE");
+    if (!$userLock) throw new RuntimeException('Could not prepare user lock.');
+    $userLock->bind_param('i', $userId);
+    $userLock->execute();
+    $user = $userLock->get_result()->fetch_assoc();
+    $userLock->close();
+    if (!$user) {
+        $db->rollback();
+        echo json_encode(['success' => false, 'message' => 'User not found.']);
+        exit;
+    }
+
+    // Delete in dependency order (child tables first, then users).
     $tables = [
         'user_edit_access'      => 'user_id',
         'student_queries'       => 'user_id',
@@ -62,7 +63,7 @@ try {
     $stmt->execute();
     $stmt->close();
 
-    $db->commit();
+    if (!$db->commit()) throw new RuntimeException('Could not commit user deletion.');
     echo json_encode(['success' => true, 'message' => 'Student record permanently deleted.']);
 } catch (Throwable $e) {
     $db->rollback();

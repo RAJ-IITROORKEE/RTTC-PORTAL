@@ -65,14 +65,28 @@ if (!$localPayment) {
 }
 
 if ($event['event'] === 'payment.captured') {
-    $amount = (int)($payment['amount'] ?? 0);
-    $currency = (string)($payment['currency'] ?? '');
-    if ($amount !== (int)$localPayment['amount'] || $currency !== (string)$localPayment['currency']) {
+    if (!PaymentHelper::matchesExpectedAmount($payment, (int)$localPayment['amount'], (string)$localPayment['currency'])) {
         error_log('Razorpay webhook amount/currency mismatch for order: ' . $orderId);
         $respond(400, 'Payment details mismatch');
     }
 
     $db->begin_transaction();
+
+    $userId = (int)$localPayment['user_id'];
+    $applicantLock = $db->prepare("SELECT id FROM users WHERE id = ? FOR UPDATE");
+    if (!$applicantLock) {
+        $db->rollback();
+        error_log('Could not lock Razorpay webhook applicant: ' . $db->error);
+        $respond(500, 'Temporary error');
+    }
+    $applicantLock->bind_param('i', $userId);
+    $applicantLock->execute();
+    $lockedApplicant = $applicantLock->get_result()->fetch_assoc();
+    $applicantLock->close();
+    if (!$lockedApplicant) {
+        $db->rollback();
+        $respond(500, 'Temporary error');
+    }
 
     $lock = $db->prepare("SELECT status, razorpay_payment_id FROM payment WHERE id = ? FOR UPDATE");
     if (!$lock) {
@@ -96,6 +110,42 @@ if ($event['event'] === 'payment.captured') {
             error_log('Razorpay webhook attempted to replace a successful payment for order: ' . $orderId);
         }
         $db->rollback();
+        $respond(200, 'OK');
+    }
+    if (($lockedPayment['razorpay_payment_id'] ?? '') !== '' && $lockedPayment['razorpay_payment_id'] !== $paymentId) {
+        $db->rollback();
+        error_log('Razorpay webhook payment ID mismatch for order: ' . $orderId);
+        $respond(400, 'Payment details mismatch');
+    }
+
+    $successLock = $db->prepare("SELECT id FROM payment
+        WHERE user_id = ? AND status = 'success' AND id <> ? LIMIT 1 FOR UPDATE");
+    if (!$successLock) {
+        $db->rollback();
+        error_log('Could not check successful Razorpay webhook payment: ' . $db->error);
+        $respond(500, 'Temporary error');
+    }
+    $successLock->bind_param('ii', $userId, $paymentRowId);
+    $successLock->execute();
+    $existingSuccess = $successLock->get_result()->fetch_assoc();
+    $successLock->close();
+    if ($existingSuccess) {
+        // Keep the extra capture non-success for manual review/refund, but retain its payment ID.
+        $duplicateUpdate = $db->prepare("UPDATE payment SET razorpay_payment_id = ?
+            WHERE id = ? AND status <> 'success'
+            AND (razorpay_payment_id IS NULL OR razorpay_payment_id = ?)");
+        if (!$duplicateUpdate) {
+            $db->rollback();
+            $respond(500, 'Temporary error');
+        }
+        $duplicateUpdate->bind_param('sis', $paymentId, $paymentRowId, $paymentId);
+        $duplicateSaved = $duplicateUpdate->execute();
+        $duplicateUpdate->close();
+        if (!$duplicateSaved || !$db->commit()) {
+            $db->rollback();
+            $respond(500, 'Temporary error');
+        }
+        error_log('Duplicate captured Razorpay payment requires review for order: ' . $orderId);
         $respond(200, 'OK');
     }
 
@@ -122,7 +172,6 @@ if ($event['event'] === 'payment.captured') {
         error_log('Could not prepare registration progress update: ' . $db->error);
         $respond(500, 'Temporary error');
     }
-    $userId = (int)$localPayment['user_id'];
     $progress->bind_param('i', $userId);
     $progressUpdated = $progress->execute();
     $progress->close();

@@ -53,6 +53,7 @@ The webhook URL must be public HTTPS. Razorpay cannot deliver directly to an XAM
 2. Log in as a test applicant and complete the document step.
 3. Open the payment page. The server creates a Razorpay order and stores it as `pending` before Checkout opens.
 4. Complete a Test Mode payment. For UPI simulation, Razorpay documents `success@razorpay` and `failure@razorpay` test IDs.
+   If Razorpay convenience fees are configured as customer-borne, the Checkout total can be higher than the application fee. The integration verifies that the captured total minus Razorpay's signed `fee` equals the original order amount.
 5. Confirm the browser callback reaches `/api/payment-process.php` and redirects to confirmation.
 6. In the database, confirm the order changed from `pending` to `success`, the payment ID is stored, and `registration_progress.current_step` is `4`.
 7. In Razorpay Dashboard -> Webhooks -> View Logs, confirm the event received HTTP `200`.
