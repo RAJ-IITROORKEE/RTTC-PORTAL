@@ -46,6 +46,9 @@ $totalAmt = $sumStmt->fetch_row()[0] ?? 0;
 $pageTitle  = 'Payments - Admin RTTC 2026';
 $activePage = 'payments';
 $breadcrumb = [['label' => 'Payments']];
+$isTestMode = str_starts_with(RAZORPAY_KEY_ID, 'rzp_test_');
+$deletePaymentUrl = route('api.admin.delete-payment');
+$deletePaymentCsrf = SecurityHelper::generateCsrf();
 ob_start();
 ?>
 
@@ -91,6 +94,14 @@ ob_start();
                             <a href="<?= route('admin.students.view', ['id' => $row['user_id']]) ?>" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            <?php if ($isTestMode): ?>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-payment-btn"
+                                        data-payment-id="<?= (int)$row['id'] ?>"
+                                        data-student="<?= htmlspecialchars($row['username'], ENT_QUOTES, 'UTF-8') ?>"
+                                        title="Delete payment record for testing">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -116,4 +127,37 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+$deletePaymentUrlJson = json_encode($deletePaymentUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$deletePaymentCsrfJson = json_encode($deletePaymentCsrf, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$extraFoot = <<<HTML
+<script>
+(function () {
+    const deleteUrl = {$deletePaymentUrlJson};
+    const csrfToken = {$deletePaymentCsrfJson};
+
+    document.querySelectorAll('.delete-payment-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const student = button.dataset.student || 'this student';
+            if (!window.confirm('Delete this payment record for ' + student + '? The deletion will be audited and the applicant can test payment again.')) return;
+
+            button.disabled = true;
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                body: new URLSearchParams({payment_id: button.dataset.paymentId, csrf_token: csrfToken})
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (result) {
+                    if (!result.success) throw new Error(result.message || 'Could not delete payment record.');
+                    window.location.reload();
+                })
+                .catch(function (error) {
+                    button.disabled = false;
+                    window.alert(error.message);
+                });
+        });
+    });
+}());
+</script>
+HTML;
 include BASE_PATH . '/admin/layouts/admin.php';

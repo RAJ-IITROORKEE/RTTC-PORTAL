@@ -18,6 +18,12 @@ $processApi = file_get_contents(__DIR__ . '/../api/payment-process.php');
 $webhookApi = file_get_contents(__DIR__ . '/../api/payment-webhook.php');
 $legacyWebhook = file_get_contents(__DIR__ . '/../webhook/payment.php');
 $deleteUserApi = file_get_contents(__DIR__ . '/../api/admin-delete-user.php');
+$deletePaymentApi = file_get_contents(__DIR__ . '/../api/admin-delete-payment.php');
+$adminPaymentsPage = file_get_contents(__DIR__ . '/../admin/payments/index.php');
+$routes = file_get_contents(__DIR__ . '/../helpers/RouteHelper.php');
+$htaccess = file_get_contents(__DIR__ . '/../.htaccess');
+$schema = file_get_contents(__DIR__ . '/../database/schema.sql');
+$auditMigration = file_get_contents(__DIR__ . '/../database/add_payment_deletion_log.sql');
 
 assertPaymentContract(strpos($paymentPage, 'RAZORPAY_AMOUNT') !== false, 'checkout uses configured amount');
 assertPaymentContract(strpos($paymentPage, "status = 'pending'") !== false && strpos($paymentPage, '30 MINUTE') !== false, 'checkout reuses recent pending orders');
@@ -46,5 +52,17 @@ assertPaymentContract(strpos($webhookApi, 'FROM users WHERE id = ? FOR UPDATE') 
 assertPaymentContract(strpos($webhookApi, '$db->commit()') !== false, 'webhook checks transaction commit');
 assertPaymentContract(strpos($legacyWebhook, "../api/payment-webhook.php") !== false, 'configured dashboard URL reaches webhook handler');
 assertPaymentContract(strpos($deleteUserApi, 'FROM users WHERE id = ? FOR UPDATE') !== false, 'user deletion follows the applicant-first payment lock order');
+assertPaymentContract(strpos($deletePaymentApi, 'SecurityHelper::requireAdminAuth') !== false, 'payment deletion requires admin authentication');
+assertPaymentContract(strpos($deletePaymentApi, 'SecurityHelper::verifyCsrf') !== false, 'payment deletion verifies CSRF');
+assertPaymentContract(strpos($deletePaymentApi, "str_starts_with(RAZORPAY_KEY_ID, 'rzp_test_')") !== false, 'payment deletion is restricted to Razorpay Test Mode');
+assertPaymentContract(strpos($deletePaymentApi, 'payment_deletion_log') !== false, 'payment deletion records an audit snapshot');
+assertPaymentContract(strpos($deletePaymentApi, "UPDATE registration_progress") !== false, 'payment deletion resets registration progress when appropriate');
+assertPaymentContract(strpos($adminPaymentsPage, 'admin.delete-payment') !== false, 'payments page exposes the delete action route');
+assertPaymentContract(strpos($adminPaymentsPage, 'delete-payment-btn') !== false, 'payments page renders a delete button');
+assertPaymentContract(strpos($adminPaymentsPage, '$isTestMode') !== false, 'payments page limits delete button to Test Mode');
+assertPaymentContract(strpos($routes, "'api.admin.delete-payment'") !== false, 'payment deletion route is named');
+assertPaymentContract(strpos($htaccess, 'api/admin-delete-payment') !== false, 'payment deletion route is rewritten');
+assertPaymentContract(strpos($schema, 'payment_deletion_log') !== false, 'database schema includes payment deletion audit table');
+assertPaymentContract(strpos($auditMigration, 'CREATE TABLE IF NOT EXISTS `payment_deletion_log`') !== false, 'payment deletion audit migration is available');
 
 echo "payment_integration_contract_test passed\n";

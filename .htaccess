@@ -48,6 +48,7 @@ RewriteRule ^api/submit-query$        api/submit-query.php [L,QSA]
 RewriteRule ^api/admin-query-reply$   api/admin-query-reply.php [L,QSA]
 RewriteRule ^api/admin-query-action$  api/admin-query-action.php [L,QSA]
 RewriteRule ^api/admin-delete-user$   api/admin-delete-user.php [L,QSA]
+RewriteRule ^api/admin-delete-payment$ api/admin-delete-payment.php [L,QSA]
 RewriteRule ^error/404$               error/404.php [L,QSA]
 
 # Catch-all: friendly 404 page for unknown routes

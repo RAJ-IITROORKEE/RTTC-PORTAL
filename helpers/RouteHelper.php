@@ -71,7 +71,8 @@ function route(string $name, array $params = []): string
         'admin.queries.index'     => '/admin/queries',
         'api.admin.query-reply'   => '/api/admin-query-reply',
         'api.admin.query-action'  => '/api/admin-query-action',
-        'api.admin.delete-user'   => '/api/admin-delete-user',
+         'api.admin.delete-user'   => '/api/admin-delete-user',
+         'api.admin.delete-payment'=> '/api/admin-delete-payment',
 
         // Errors
         'error.404'               => '/error/404',
