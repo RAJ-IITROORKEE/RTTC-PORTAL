@@ -16,7 +16,7 @@ $queries_map = [
     'personal_done'     => "SELECT COUNT(*) FROM registration_progress WHERE current_step >= 1",
     'academic_done'     => "SELECT COUNT(*) FROM registration_progress WHERE current_step >= 2",
     'docs_done'         => "SELECT COUNT(*) FROM registration_progress WHERE current_step >= 3",
-    'payments_done'     => "SELECT COUNT(*) FROM registration_progress WHERE current_step >= 4",
+    'payments_done'     => "SELECT COUNT(DISTINCT user_id) FROM payment WHERE status = 'success'",
 ];
 $stats = [];
 foreach ($queries_map as $key => $q) {
@@ -27,7 +27,16 @@ foreach ($queries_map as $key => $q) {
 // All registrations for DataTable (no LIMIT — client-side pagination)
 $recent = $db->query("
     SELECT u.id, u.username, u.email, u.phone, u.created_at,
-           rp.current_step, rp.is_submitted
+           CASE WHEN EXISTS (
+               SELECT 1 FROM payment dashboard_payment_status
+               WHERE dashboard_payment_status.user_id = u.id
+                 AND dashboard_payment_status.status = 'success'
+           ) THEN 4 ELSE LEAST(COALESCE(rp.current_step, 0), 3) END AS current_step,
+           CASE WHEN EXISTS (
+               SELECT 1 FROM payment dashboard_payment_submitted
+               WHERE dashboard_payment_submitted.user_id = u.id
+                 AND dashboard_payment_submitted.status = 'success'
+           ) THEN COALESCE(rp.is_submitted, 0) ELSE 0 END AS is_submitted
     FROM users u
     LEFT JOIN registration_progress rp ON rp.user_id = u.id
     ORDER BY u.created_at DESC

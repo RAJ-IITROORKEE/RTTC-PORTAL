@@ -21,6 +21,7 @@ $deleteUserApi = file_get_contents(__DIR__ . '/../api/admin-delete-user.php');
 $deletePaymentApi = file_get_contents(__DIR__ . '/../api/admin-delete-payment.php');
 $adminPaymentsPage = file_get_contents(__DIR__ . '/../admin/payments/index.php');
 $adminStudentsPage = file_get_contents(__DIR__ . '/../admin/students/index.php');
+$adminDashboardPage = file_get_contents(__DIR__ . '/../admin/dashboard.php');
 $welcomePage = file_get_contents(__DIR__ . '/../welcome.php');
 $routes = file_get_contents(__DIR__ . '/../helpers/RouteHelper.php');
 $htaccess = file_get_contents(__DIR__ . '/../.htaccess');
@@ -69,6 +70,7 @@ assertPaymentContract(strpos($schema, 'payment_deletion_log') !== false, 'databa
 assertPaymentContract(strpos($auditMigration, 'CREATE TABLE IF NOT EXISTS `payment_deletion_log`') !== false, 'payment deletion audit migration is available');
 assertPaymentContract(strpos($auditMigration, 'SET rp.current_step = 3, rp.is_submitted = 0') !== false, 'payment deletion migration repairs stale progress without touching form tables');
 assertPaymentContract(strpos($adminStudentsPage, 'EXISTS (') !== false && strpos($adminStudentsPage, 'FROM payment payment_status') !== false, 'student progress does not show stale payment without a successful payment row');
+assertPaymentContract(strpos($adminDashboardPage, 'FROM payment dashboard_payment_status') !== false, 'dashboard progress does not show stale payment without a successful payment row');
 assertPaymentContract(strpos($welcomePage, 'EXISTS (') !== false && strpos($welcomePage, 'FROM payment p') !== false, 'applicant progress does not show stale payment without a successful payment row');
 
 echo "payment_integration_contract_test passed\n";
