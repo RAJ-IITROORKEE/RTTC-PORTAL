@@ -15,6 +15,14 @@ $offset  = ($pageNum - 1) * $perPage;
 $where  = "WHERE 1=1";
 $params = [];
 $types  = '';
+$effectiveStepSql = "CASE WHEN EXISTS (
+    SELECT 1 FROM payment payment_status
+    WHERE payment_status.user_id = u.id AND payment_status.status = 'success'
+) THEN 4 ELSE LEAST(COALESCE(rp.current_step, 0), 3) END";
+$effectiveSubmittedSql = "CASE WHEN EXISTS (
+    SELECT 1 FROM payment payment_submitted
+    WHERE payment_submitted.user_id = u.id AND payment_submitted.status = 'success'
+) THEN COALESCE(rp.is_submitted, 0) ELSE 0 END";
 
 if (!empty($search)) {
     $where   .= " AND (u.username LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)";
@@ -23,7 +31,7 @@ if (!empty($search)) {
     $types   .= 'sss';
 }
 if ($stepF >= 0) {
-    $where  .= " AND rp.current_step = ?";
+    $where  .= " AND {$effectiveStepSql} = ?";
     $params[] = $stepF;
     $types   .= 'i';
 }
@@ -38,7 +46,7 @@ $totalPages = ceil($total / $perPage);
 
 // Fetch rows
 $sql = "SELECT u.id, u.username, u.email, u.phone, u.is_verified, u.created_at,
-               rp.current_step, rp.is_submitted
+               {$effectiveStepSql} AS current_step, {$effectiveSubmittedSql} AS is_submitted
         FROM users u
         LEFT JOIN registration_progress rp ON rp.user_id = u.id
         $where
@@ -118,7 +126,7 @@ ob_start();
                         <td><?= htmlspecialchars($row['phone']) ?></td>
                         <td><?= $row['is_verified'] ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>' ?></td>
                         <td>
-                            <?php $s = $row['current_step'] ?? 0;
+                            <?php $s = (int)($row['current_step'] ?? 0);
                             $sc = ['secondary','info','warning','primary','success'];
                             $sl = ['Not Started','Personal','Academic','Docs','Payment'];
                             echo '<span class="badge bg-' . ($sc[$s] ?? 'secondary') . '">' . ($sl[$s] ?? 'N/A') . '</span>';

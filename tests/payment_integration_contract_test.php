@@ -20,6 +20,8 @@ $legacyWebhook = file_get_contents(__DIR__ . '/../webhook/payment.php');
 $deleteUserApi = file_get_contents(__DIR__ . '/../api/admin-delete-user.php');
 $deletePaymentApi = file_get_contents(__DIR__ . '/../api/admin-delete-payment.php');
 $adminPaymentsPage = file_get_contents(__DIR__ . '/../admin/payments/index.php');
+$adminStudentsPage = file_get_contents(__DIR__ . '/../admin/students/index.php');
+$welcomePage = file_get_contents(__DIR__ . '/../welcome.php');
 $routes = file_get_contents(__DIR__ . '/../helpers/RouteHelper.php');
 $htaccess = file_get_contents(__DIR__ . '/../.htaccess');
 $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
@@ -56,6 +58,7 @@ assertPaymentContract(strpos($deletePaymentApi, 'SecurityHelper::requireAdminAut
 assertPaymentContract(strpos($deletePaymentApi, 'SecurityHelper::verifyCsrf') !== false, 'payment deletion verifies CSRF');
 assertPaymentContract(strpos($deletePaymentApi, "str_starts_with(RAZORPAY_KEY_ID, 'rzp_test_')") !== false, 'payment deletion is restricted to Razorpay Test Mode');
 assertPaymentContract(strpos($deletePaymentApi, 'payment_deletion_log') !== false, 'payment deletion records an audit snapshot');
+assertPaymentContract(strpos($deletePaymentApi, 'DELETE FROM payment') !== false && strpos($deletePaymentApi, 'DELETE FROM users') === false, 'payment deletion preserves the applicant account and other form data');
 assertPaymentContract(strpos($deletePaymentApi, "UPDATE registration_progress") !== false, 'payment deletion resets registration progress when appropriate');
 assertPaymentContract(strpos($adminPaymentsPage, 'admin.delete-payment') !== false, 'payments page exposes the delete action route');
 assertPaymentContract(strpos($adminPaymentsPage, 'delete-payment-btn') !== false, 'payments page renders a delete button');
@@ -64,5 +67,8 @@ assertPaymentContract(strpos($routes, "'api.admin.delete-payment'") !== false, '
 assertPaymentContract(strpos($htaccess, 'api/admin-delete-payment') !== false, 'payment deletion route is rewritten');
 assertPaymentContract(strpos($schema, 'payment_deletion_log') !== false, 'database schema includes payment deletion audit table');
 assertPaymentContract(strpos($auditMigration, 'CREATE TABLE IF NOT EXISTS `payment_deletion_log`') !== false, 'payment deletion audit migration is available');
+assertPaymentContract(strpos($auditMigration, 'SET rp.current_step = 3, rp.is_submitted = 0') !== false, 'payment deletion migration repairs stale progress without touching form tables');
+assertPaymentContract(strpos($adminStudentsPage, 'EXISTS (') !== false && strpos($adminStudentsPage, 'FROM payment payment_status') !== false, 'student progress does not show stale payment without a successful payment row');
+assertPaymentContract(strpos($welcomePage, 'EXISTS (') !== false && strpos($welcomePage, 'FROM payment p') !== false, 'applicant progress does not show stale payment without a successful payment row');
 
 echo "payment_integration_contract_test passed\n";

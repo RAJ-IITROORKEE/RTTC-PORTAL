@@ -66,7 +66,7 @@ The webhook must receive the original raw request body for HMAC verification. Th
 
 The Admin -> Payments page has a trash button beside each successful payment. It deletes the local payment row, writes an immutable snapshot to `payment_deletion_log`, and resets the applicant to registration step 3 when no other successful payment remains. This is for test cleanup only; it does not refund or cancel the Razorpay transaction.
 
-Before using the button on an existing deployment, apply `database/add_payment_deletion_log.sql` to that deployment's database. The phpMyAdmin database must be the same database configured by the deployed server `.env`; an empty local `payment` table will not change records displayed by the production admin dashboard.
+Before using the button on an existing deployment, apply `database/add_payment_deletion_log.sql` to that deployment's database. The SQL also repairs stale `registration_progress` rows left by manual payment deletion without touching personal, academic, or document data. The phpMyAdmin database must be the same database configured by the deployed server `.env`; an empty local `payment` table will not change records displayed by the production admin dashboard.
 
 ## Live Cutover
 

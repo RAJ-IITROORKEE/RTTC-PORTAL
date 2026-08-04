@@ -9,14 +9,19 @@ $db = db();
 $userId = SessionHelper::get('user_id');
 $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 
-$stmt = $db->prepare("SELECT current_step, is_submitted FROM registration_progress WHERE user_id = ?");
+$stmt = $db->prepare("SELECT current_step, is_submitted,
+    EXISTS (SELECT 1 FROM payment p WHERE p.user_id = registration_progress.user_id AND p.status = 'success') AS has_successful_payment
+    FROM registration_progress WHERE user_id = ?");
 $stmt->bind_param('i', $userId);
 $stmt->execute();
 $prog = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-$currentStep  = $prog['current_step'] ?? 0;
-$isSubmitted  = $prog['is_submitted'] ?? 0;
+$hasSuccessfulPayment = !empty($prog['has_successful_payment']);
+$currentStep = $hasSuccessfulPayment
+    ? max((int)($prog['current_step'] ?? 0), 4)
+    : min((int)($prog['current_step'] ?? 0), 3);
+$isSubmitted = $hasSuccessfulPayment ? (int)($prog['is_submitted'] ?? 0) : 0;
 
 // Check if admin has granted active edit access to this user
 $editAccess = false;
