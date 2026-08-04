@@ -42,6 +42,7 @@ define('SMTP_FROM_NAME',  EnvHelper::get('SMTP_FROM_NAME',  'RTTC Admissions'));
 // ── Payment ──────────────────────────────────────────────────
 define('RAZORPAY_KEY_ID',     EnvHelper::get('RAZORPAY_KEY_ID',     ''));
 define('RAZORPAY_KEY_SECRET', EnvHelper::get('RAZORPAY_KEY_SECRET', ''));
+define('RAZORPAY_WEBHOOK_SECRET', EnvHelper::get('RAZORPAY_WEBHOOK_SECRET', ''));
 define('RAZORPAY_AMOUNT',     (int) EnvHelper::get('RAZORPAY_AMOUNT', 50000)); // paise (₹500)
 
 // ── File Upload ──────────────────────────────────────────────

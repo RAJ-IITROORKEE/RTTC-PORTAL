@@ -10,6 +10,7 @@ define('BASE_PATH', __DIR__ . '/..');
 require_once ROOT_PATH . '/config/config.php';
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/helpers/SecurityHelper.php';
+require_once ROOT_PATH . '/helpers/PaymentHelper.php';
 require_once ROOT_PATH . '/helpers/SessionHelper.php';
 require_once ROOT_PATH . '/helpers/ValidationHelper.php';
 require_once ROOT_PATH . '/helpers/RouteHelper.php';

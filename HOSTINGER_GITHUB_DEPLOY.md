@@ -88,6 +88,7 @@ SMTP_FROM_NAME="RTTC Admissions"
 # Payment (Razorpay)
 RAZORPAY_KEY_ID=your_live_razorpay_key
 RAZORPAY_KEY_SECRET=your_live_razorpay_secret
+RAZORPAY_WEBHOOK_SECRET=your_live_webhook_secret
 RAZORPAY_AMOUNT=50000
 
 # Session

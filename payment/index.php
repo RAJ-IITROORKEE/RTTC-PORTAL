@@ -36,36 +36,92 @@ $user = $stmt2->get_result()->fetch_assoc();
 $stmt2->close();
 
 $razorpayKey = RAZORPAY_KEY_ID;
-$amount      = 50000; // in paise = Rs 500
+$amount      = RAZORPAY_AMOUNT;
 $currency    = 'INR';
-$receiptId   = 'RTTC2026_' . $userId . '_' . time();
+$displayAmount = number_format($amount / 100, 2, '.', '');
+
+// Reuse a recent pending order so refreshing the page cannot create duplicate charges.
+$pendingStmt = $db->prepare("SELECT razorpay_order_id, amount, currency
+    FROM payment
+    WHERE user_id = ? AND status = 'pending' AND amount = ? AND currency = ?
+      AND created_at >= (NOW() - INTERVAL 30 MINUTE)
+    ORDER BY id DESC LIMIT 1");
+if ($pendingStmt) {
+    $pendingStmt->bind_param('iis', $userId, $amount, $currency);
+    $pendingStmt->execute();
+    $pending = $pendingStmt->get_result()->fetch_assoc();
+    $pendingStmt->close();
+} else {
+    $pending = null;
+}
+
+$orderData = $pending ? [
+    'id' => $pending['razorpay_order_id'],
+    'amount' => (int) $pending['amount'],
+    'currency' => $pending['currency'],
+] : null;
 
 // Create Razorpay order via API
-$orderData = null;
 $orderError = null;
-try {
-    $ch = curl_init('https://api.razorpay.com/v1/orders');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_USERPWD => RAZORPAY_KEY_ID . ':' . RAZORPAY_KEY_SECRET,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => json_encode([
-            'amount'   => $amount,
-            'currency' => $currency,
-            'receipt'  => $receiptId,
-            'notes'    => ['user_id' => $userId, 'email' => $user['email']],
-        ]),
-        CURLOPT_SSL_VERIFYPEER => false,
+if ($orderData === null && ($razorpayKey === '' || RAZORPAY_KEY_SECRET === '' || $amount <= 0)) {
+    $orderError = 'Payment is temporarily unavailable. Please contact support.';
+} elseif ($orderData === null) {
+    $receiptId = 'RTTC2026_' . $userId . '_' . bin2hex(random_bytes(6));
+    $requestBody = json_encode([
+        'amount'   => $amount,
+        'currency' => $currency,
+        'receipt'  => $receiptId,
+        'notes'    => ['user_id' => $userId, 'email' => $user['email']],
     ]);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    $orderData = json_decode($response, true);
-    if (empty($orderData['id'])) {
-        $orderError = 'Could not create payment order. Please try again.';
+
+    $ch = curl_init('https://api.razorpay.com/v1/orders');
+    if ($ch === false || $requestBody === false) {
+        $orderError = 'Payment gateway error. Please try again.';
+    } else {
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_USERPWD => $razorpayKey . ':' . RAZORPAY_KEY_SECRET,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $requestBody,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $orderData = is_string($response) ? json_decode($response, true) : null;
+        if ($curlError !== '' || $httpCode < 200 || $httpCode >= 300 || !is_array($orderData) || empty($orderData['id'])) {
+            error_log('Razorpay order creation failed. HTTP status: ' . $httpCode . ($curlError !== '' ? ', cURL: ' . $curlError : ''));
+            $orderData = null;
+            $orderError = 'Could not create payment order. Please try again.';
+        } elseif ((int)($orderData['amount'] ?? 0) !== $amount || ($orderData['currency'] ?? '') !== $currency) {
+            error_log('Razorpay order amount or currency did not match the requested payment.');
+            $orderData = null;
+            $orderError = 'Payment order validation failed. Please try again.';
+        } else {
+            $createdOrderId = (string) $orderData['id'];
+            $stmt = $db->prepare("INSERT INTO payment (user_id, razorpay_order_id, amount, currency, status)
+                VALUES (?, ?, ?, ?, 'pending')");
+            if (!$stmt) {
+                $orderData = null;
+                $orderError = 'Could not prepare payment order. Please try again.';
+            } else {
+                $stmt->bind_param('isis', $userId, $createdOrderId, $amount, $currency);
+                if (!$stmt->execute()) {
+                    error_log('Could not persist Razorpay order: ' . $stmt->error);
+                    $orderData = null;
+                    $orderError = 'Could not save payment order. Please try again.';
+                }
+                $stmt->close();
+            }
+        }
     }
-} catch (Exception $e) {
-    $orderError = 'Payment gateway error. Please try again.';
 }
 
 $pageTitle = 'Payment - Step 4 - RTTC 2026';
@@ -105,11 +161,11 @@ ob_start();
                         </tr>
                         <tr>
                             <td class="text-muted">Amount</td>
-                            <td><span class="badge bg-primary fs-6">₹500.00</span></td>
+                            <td><span class="badge bg-primary fs-6">₹<?= $displayAmount ?></span></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Order ID</td>
-                            <td class="small text-muted"><?= htmlspecialchars($orderData['id'] ?? '') ?></td>
+                            <td class="small text-muted"><?= htmlspecialchars((string)($orderData['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         </tr>
                     </table>
 
@@ -122,7 +178,7 @@ ob_start();
 
                     <div class="d-grid">
                         <button id="payBtn" class="btn btn-success btn-lg">
-                            <i class="bi bi-lock-fill me-2"></i>Pay ₹500 Securely
+                            <i class="bi bi-lock-fill me-2"></i>Pay ₹<?= $displayAmount ?> Securely
                         </button>
                     </div>
 
@@ -141,23 +197,23 @@ ob_start();
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const options = {
-    key: '<?= RAZORPAY_KEY_ID ?>',
+    key: <?= json_encode(RAZORPAY_KEY_ID, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
     amount: <?= $amount ?>,
-    currency: '<?= $currency ?>',
+    currency: <?= json_encode($currency) ?>,
     name: 'RTTC Admission 2026',
     description: 'B.Ed admission 2026-27 application fee',
-    image: '<?= BASE_URL ?>/assets/img/RTTC_logo.jpeg',
-    order_id: '<?= $orderData['id'] ?>',
+    image: <?= json_encode(BASE_URL . '/assets/img/RTTC_logo.jpeg', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+    order_id: <?= json_encode((string)$orderData['id'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
     handler: function(response) {
         // Send to verification endpoint
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '<?= BASE_URL ?>/api/payment-process.php';
+        form.action = <?= json_encode(BASE_URL . '/api/payment-process.php', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const fields = {
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_order_id:   response.razorpay_order_id,
             razorpay_signature:  response.razorpay_signature,
-            csrf_token:          '<?= SecurityHelper::generateCsrf() ?>',
+            csrf_token:          <?= json_encode(SecurityHelper::generateCsrf(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
         };
         for (const [k, v] of Object.entries(fields)) {
             const inp = document.createElement('input');
@@ -167,16 +223,16 @@ const options = {
         document.body.appendChild(form);
         form.submit();
     },
-    prefill: {
-        name:  '<?= htmlspecialchars($user['username']) ?>',
-        email: '<?= htmlspecialchars($user['email']) ?>',
-        contact: '<?= htmlspecialchars($user['phone']) ?>',
-    },
+    prefill: <?= json_encode([
+        'name' => (string)($user['username'] ?? ''),
+        'email' => (string)($user['email'] ?? ''),
+        'contact' => (string)($user['phone'] ?? ''),
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
     theme: { color: '#27276d' },
     modal: {
         ondismiss: function() {
             document.getElementById('payBtn').disabled = false;
-            document.getElementById('payBtn').innerHTML = '<i class="bi bi-lock-fill me-2"></i>Pay ₹500 Securely';
+            document.getElementById('payBtn').innerHTML = '<i class="bi bi-lock-fill me-2"></i>Pay ₹<?= $displayAmount ?> Securely';
         }
     }
 };

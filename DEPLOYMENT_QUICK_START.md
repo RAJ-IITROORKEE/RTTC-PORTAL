@@ -85,6 +85,7 @@ SMTP_FROM_NAME="RTTC Admissions"
 # Razorpay - Update with live keys
 RAZORPAY_KEY_ID=your_live_key
 RAZORPAY_KEY_SECRET=your_live_secret
+RAZORPAY_WEBHOOK_SECRET=your_live_webhook_secret
 RAZORPAY_AMOUNT=50000
 
 # Keep as-is
