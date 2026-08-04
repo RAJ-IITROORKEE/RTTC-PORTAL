@@ -49,5 +49,9 @@ assertPaymentSecurity(
     PaymentHelper::fetchPayment('', 'test-key', 'test-secret') === null,
     'payment fetch rejects missing payment ID'
 );
+assertPaymentSecurity(
+    PaymentHelper::fetchOrder('', 'test-key', 'test-secret') === null,
+    'order fetch rejects missing order ID'
+);
 
 echo "payment_security_test passed\n";

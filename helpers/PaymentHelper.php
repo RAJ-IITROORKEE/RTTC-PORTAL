@@ -78,4 +78,37 @@ class PaymentHelper
         $payment = json_decode($response, true);
         return is_array($payment) ? $payment : null;
     }
+
+    public static function fetchOrder(
+        string $orderId,
+        string $keyId,
+        string $keySecret
+    ): ?array {
+        if ($orderId === '' || $keyId === '' || $keySecret === '') return null;
+
+        $ch = curl_init('https://api.razorpay.com/v1/orders/' . rawurlencode($orderId));
+        if ($ch === false) return null;
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD => $keyId . ':' . $keySecret,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($curlError !== '' || $httpCode < 200 || $httpCode >= 300 || !is_string($response)) {
+            return null;
+        }
+
+        $order = json_decode($response, true);
+        return is_array($order) ? $order : null;
+    }
 }

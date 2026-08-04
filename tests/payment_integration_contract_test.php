@@ -20,6 +20,7 @@ $legacyWebhook = file_get_contents(__DIR__ . '/../webhook/payment.php');
 
 assertPaymentContract(strpos($paymentPage, 'RAZORPAY_AMOUNT') !== false, 'checkout uses configured amount');
 assertPaymentContract(strpos($paymentPage, "status = 'pending'") !== false && strpos($paymentPage, '30 MINUTE') !== false, 'checkout reuses recent pending orders');
+assertPaymentContract(strpos($paymentPage, 'PaymentHelper::fetchOrder') !== false, 'checkout validates reused orders with current credentials');
 assertPaymentContract(strpos($paymentPage, 'displayAmount') !== false, 'payment display uses configured amount');
 assertPaymentContract(strpos($paymentPage, "CURLOPT_SSL_VERIFYPEER => false") === false, 'checkout keeps TLS verification enabled');
 assertPaymentContract(strpos($paymentPage, "INSERT INTO payment") !== false, 'checkout persists a pending order');

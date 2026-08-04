@@ -41,7 +41,7 @@ $currency    = 'INR';
 $displayAmount = number_format($amount / 100, 2, '.', '');
 
 // Reuse a recent pending order so refreshing the page cannot create duplicate charges.
-$pendingStmt = $db->prepare("SELECT razorpay_order_id, amount, currency
+$pendingStmt = $db->prepare("SELECT id, razorpay_order_id, amount, currency
     FROM payment
     WHERE user_id = ? AND status = 'pending' AND amount = ? AND currency = ?
       AND created_at >= (NOW() - INTERVAL 30 MINUTE)
@@ -55,11 +55,39 @@ if ($pendingStmt) {
     $pending = null;
 }
 
-$orderData = $pending ? [
-    'id' => $pending['razorpay_order_id'],
-    'amount' => (int) $pending['amount'],
-    'currency' => $pending['currency'],
-] : null;
+$orderData = null;
+if ($pending && $razorpayKey !== '' && RAZORPAY_KEY_SECRET !== '') {
+    // A pending row may belong to an old Razorpay account/key after credentials change.
+    $remoteOrder = PaymentHelper::fetchOrder(
+        (string) $pending['razorpay_order_id'],
+        $razorpayKey,
+        RAZORPAY_KEY_SECRET
+    );
+    if (
+        $remoteOrder
+        && ($remoteOrder['id'] ?? '') === $pending['razorpay_order_id']
+        && (int)($remoteOrder['amount'] ?? 0) === $amount
+        && ($remoteOrder['currency'] ?? '') === $currency
+        && in_array(($remoteOrder['status'] ?? ''), ['created', 'attempted'], true)
+    ) {
+        $orderData = [
+            'id' => $pending['razorpay_order_id'],
+            'amount' => (int) $pending['amount'],
+            'currency' => $pending['currency'],
+        ];
+    } else {
+        // Do not send an order that the current credentials cannot access to Checkout.
+        $staleStmt = $db->prepare("UPDATE payment SET status = 'failed'
+            WHERE id = ? AND status = 'pending'");
+        if ($staleStmt) {
+            $pendingId = (int) $pending['id'];
+            $staleStmt->bind_param('i', $pendingId);
+            $staleStmt->execute();
+            $staleStmt->close();
+        }
+        error_log('Discarded stale or inaccessible Razorpay pending order: ' . $pending['razorpay_order_id']);
+    }
+}
 
 // Create Razorpay order via API
 $orderError = null;
