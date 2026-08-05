@@ -26,6 +26,7 @@ $stmt = $db->prepare("
         a.masters_board, a.masters_pass_year, a.masters_total_marks, a.masters_obtained_marks, a.masters_percentage, a.masters_division, a.masters_institute,
         a.gu_reg_no, a.gu_reg_year, a.gubedcet_rollno, a.gubedcet_marks, a.gubedcet_rank,
         a.gubedcet_correct, a.gubedcet_wrong, a.gubedcet_unattempted, a.gubedcet_name, a.gubedcet_category,
+        a.gubedcet_gender, a.gubedcet_booklet_series,
         a.gu_registered, a.migrated, a.other_university,
         d.photo, d.signature,
         d.hslc_marksheet, d.hsslc_marksheet, d.degree_marksheet, d.masters_marksheet,
@@ -47,6 +48,22 @@ $stmt->bind_param('i', $id);
 $stmt->execute();
 $data = $stmt->get_result()->fetch_assoc();
 $stmt->close();
+
+// Keep the admin-generated application aligned with the student confirmation
+// page, including records saved before these fields were added to the schema.
+if (!empty($data['gubedcet_rollno'])) {
+    try {
+        $finalMeritStudent = (new GubedcetMeritListRepository(ROOT_PATH . '/final_list/GUBEDCET 2026 FINAL LIST.csv'))
+            ->findByRollNo((string) $data['gubedcet_rollno']);
+
+        if ($finalMeritStudent !== null) {
+            $data['gubedcet_gender'] = $finalMeritStudent['gender'];
+            $data['gubedcet_booklet_series'] = $finalMeritStudent['booklet_series'];
+        }
+    } catch (Throwable $exception) {
+        error_log('Admin application final merit lookup failed: ' . $exception->getMessage());
+    }
+}
 
 if (!$data) {
     SessionHelper::setFlash('error', 'Student not found.');
