@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+SecurityHelper::verifyCsrf();
+
 $action  = trim($_POST['action']   ?? '');
 $queryId = (int)($_POST['query_id'] ?? 0);
 

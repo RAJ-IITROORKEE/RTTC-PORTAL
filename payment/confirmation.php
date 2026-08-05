@@ -47,6 +47,22 @@ $stmt->execute();
 $data = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// The final merit list is authoritative. This also fills fields omitted by
+// records saved before gender and booklet series were added to the form.
+if (!empty($data['gubedcet_rollno'])) {
+    try {
+        $finalMeritStudent = (new GubedcetMeritListRepository(ROOT_PATH . '/final_list/GUBEDCET 2026 FINAL LIST.csv'))
+            ->findByRollNo((string) $data['gubedcet_rollno']);
+
+        if ($finalMeritStudent !== null) {
+            $data['gubedcet_gender'] = $finalMeritStudent['gender'];
+            $data['gubedcet_booklet_series'] = $finalMeritStudent['booklet_series'];
+        }
+    } catch (Throwable $exception) {
+        error_log('Confirmation final merit lookup failed: ' . $exception->getMessage());
+    }
+}
+
 if (!$data || ($data['current_step'] ?? 0) < 4) {
     SessionHelper::setFlash('error', 'Please complete payment first.');
     redirect(route('payment'));

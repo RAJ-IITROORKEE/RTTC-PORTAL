@@ -190,7 +190,12 @@ ob_start();
                         data-qid="<?= $q['id'] ?>"
                         data-qname="<?= htmlspecialchars($q['name'], ENT_QUOTES) ?>"
                         data-qemail="<?= htmlspecialchars($q['email'], ENT_QUOTES) ?>"
+                        data-qphone="<?= htmlspecialchars($q['phone'] ?? '', ENT_QUOTES) ?>"
                         data-qsubject="<?= htmlspecialchars($q['issue_subject'], ENT_QUOTES) ?>"
+                        data-qmessage="<?= htmlspecialchars($q['message'], ENT_QUOTES) ?>"
+                        data-qcreated="<?= htmlspecialchars($q['created_at'], ENT_QUOTES) ?>"
+                        data-qreply="<?= htmlspecialchars($q['reply_message'] ?? '', ENT_QUOTES) ?>"
+                        data-qrepliedat="<?= htmlspecialchars($q['replied_at'] ?? '', ENT_QUOTES) ?>"
                         data-quid="<?= (int)($q['user_id'] ?? 0) ?>"
                         data-qstatus="<?= $q['status'] ?>"
                         data-qaccess="<?= $q['edit_access_granted'] ? '1' : '0' ?>"
@@ -216,7 +221,7 @@ ob_start();
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="alert alert-light border mb-3" id="replyMeta"></div>
+        <div id="replyQueryDetails" class="mb-3"></div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Reply Message <span class="text-danger">*</span></label>
           <textarea class="form-control" id="replyMessage" rows="6" placeholder="Type your reply to the student..."></textarea>
@@ -240,16 +245,33 @@ ob_start();
   </div>
 </div>
 
+<!-- View Query Modal -->
+<div class="modal fade" id="viewQueryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-eye me-2 text-primary"></i>Student Query</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body"><div id="viewQueryDetails"></div></div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm Grant Access Modal -->
 <div class="modal fade" id="grantAccessModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-warning"></i>Grant Edit Access</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p>Grant edit access to <strong id="grantStudentName"></strong>? They will be able to modify their submitted registration forms.</p>
+        <div id="grantQueryDetails" class="mb-3"></div>
+        <p class="mb-0">Grant edit access to this student? They will be able to modify their submitted registration forms for 7 days.</p>
         <div id="grantError" class="text-danger small d-none"></div>
       </div>
       <div class="modal-footer border-0 pt-0">
@@ -263,20 +285,110 @@ ob_start();
   </div>
 </div>
 
+<!-- Confirm Resolve Modal -->
+<div class="modal fade" id="resolveQueryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-check-circle me-2 text-success"></i>Mark Query as Resolved</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="resolveQueryDetails" class="mb-3"></div>
+        <p class="mb-0">Mark this query as resolved without sending a reply?</p>
+        <div id="resolveError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success fw-semibold" id="confirmResolveBtn">
+          <span class="btn-text"><i class="bi bi-check-lg me-1"></i>Mark Resolved</span>
+          <span class="spinner-border spinner-border-sm d-none"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php
 $content = ob_get_clean();
 $urlQueryReply  = route('api.admin.query-reply');
 $urlQueryAction = route('api.admin.query-action');
+$csrfFieldName = json_encode(CSRF_TOKEN_NAME, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$csrfToken = json_encode(SecurityHelper::generateCsrfToken(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 $extraFoot = <<<JS
 <script>
-let activeQueryId = null;
-let activeUserId  = null;
+let activeQuery = null;
+const csrfFieldName = {$csrfFieldName};
+const csrfToken = {$csrfToken};
+
+function appendCsrf(data) {
+  data.append(csrfFieldName, csrfToken);
+}
+
+function formatDate(value) {
+  if (!value) return 'Not available';
+  const date = new Date(value.replace(' ', 'T'));
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function renderQueryDetails(containerId, query) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.replaceChildren();
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered mb-3';
+  const details = [
+    ['Student', query.name],
+    ['Email', query.email],
+    ['Phone', query.phone || 'Not provided'],
+    ['Subject', query.subject],
+    ['Submitted', formatDate(query.createdAt)],
+    ['Status', query.status === 'resolved' ? 'Resolved' : 'Pending'],
+    ['Edit access', query.hasAccess ? 'Granted' : 'Not granted']
+  ];
+  details.forEach(function (detail) {
+    const row = table.insertRow();
+    const label = document.createElement('th');
+    label.className = 'bg-light text-muted fw-semibold';
+    label.style.width = '30%';
+    label.textContent = detail[0];
+    const value = document.createElement('td');
+    value.textContent = detail[1];
+    row.append(label, value);
+  });
+  container.appendChild(table);
+
+  const messageLabel = document.createElement('div');
+  messageLabel.className = 'fw-semibold small mb-1';
+  messageLabel.textContent = 'Student message';
+  const message = document.createElement('div');
+  message.className = 'border rounded bg-light p-3 small';
+  message.style.whiteSpace = 'pre-wrap';
+  message.textContent = query.message;
+  container.append(messageLabel, message);
+
+  if (query.replyMessage) {
+    const replyLabel = document.createElement('div');
+    replyLabel.className = 'fw-semibold small mb-1 mt-3 text-success';
+    replyLabel.textContent = 'Previous admin reply' + (query.repliedAt ? ' (' + formatDate(query.repliedAt) + ')' : '');
+    const reply = document.createElement('div');
+    reply.className = 'border border-success-subtle rounded bg-success-subtle p-3 small';
+    reply.style.whiteSpace = 'pre-wrap';
+    reply.textContent = query.replyMessage;
+    container.append(replyLabel, reply);
+  }
+}
+
+function openViewModal(query) {
+  renderQueryDetails('viewQueryDetails', query);
+  new bootstrap.Modal(document.getElementById('viewQueryModal')).show();
+}
 
 // ---- Reply Modal ----
-function openReplyModal(queryId, name, email, subject) {
-  activeQueryId = queryId;
-  document.getElementById('replyMeta').innerHTML =
-    '<strong>To:</strong> ' + name + ' &lt;' + email + '&gt;<br><strong>Subject:</strong> ' + subject;
+function openReplyModal(query) {
+  activeQuery = query;
+  renderQueryDetails('replyQueryDetails', query);
   document.getElementById('replyMessage').value = '';
   document.getElementById('grantAccessCheck').checked = false;
   document.getElementById('replyError').classList.add('d-none');
@@ -294,9 +406,10 @@ document.getElementById('sendReplyBtn').addEventListener('click', function () {
   document.getElementById('replyError').classList.add('d-none');
 
   const data = new FormData();
-  data.append('query_id', activeQueryId);
+  data.append('query_id', activeQuery.id);
   data.append('reply_message', msg);
   data.append('grant_access', document.getElementById('grantAccessCheck').checked ? '1' : '0');
+  appendCsrf(data);
 
   fetch('{$urlQueryReply}', { method: 'POST', body: data })
     .then(r => r.json())
@@ -318,45 +431,56 @@ document.getElementById('sendReplyBtn').addEventListener('click', function () {
 });
 
 // ---- Grant Access ----
-function grantEditAccess(queryId, userId, name) {
-  activeQueryId = queryId;
-  activeUserId  = userId;
-  document.getElementById('grantStudentName').textContent = name;
+function grantEditAccess(query) {
+  activeQuery = query;
+  renderQueryDetails('grantQueryDetails', query);
   document.getElementById('grantError').classList.add('d-none');
   new bootstrap.Modal(document.getElementById('grantAccessModal')).show();
 }
 
-document.getElementById('confirmGrantBtn').addEventListener('click', function () {
-  setLoading(this, true);
+function submitQueryAction(action, button, errorId, modalId) {
+  const error = document.getElementById(errorId);
+  error.classList.add('d-none');
+  setLoading(button, true);
   const data = new FormData();
-  data.append('action', 'grant_access');
-  data.append('query_id', activeQueryId);
-  data.append('user_id', activeUserId);
+  data.append('action', action);
+  data.append('query_id', activeQuery.id);
+  appendCsrf(data);
 
   fetch('{$urlQueryAction}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => {
       if (res.success) {
-        bootstrap.Modal.getInstance(document.getElementById('grantAccessModal')).hide();
+        bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
         location.reload();
       } else {
-        document.getElementById('grantError').textContent = res.message || 'Error.';
-        document.getElementById('grantError').classList.remove('d-none');
-        setLoading(document.getElementById('confirmGrantBtn'), false);
+        error.textContent = res.message || 'Error.';
+        error.classList.remove('d-none');
+        setLoading(button, false);
       }
+    })
+    .catch(() => {
+      error.textContent = 'Network error. Please try again.';
+      error.classList.remove('d-none');
+      setLoading(button, false);
     });
+}
+
+document.getElementById('confirmGrantBtn').addEventListener('click', function () {
+  submitQueryAction('grant_access', this, 'grantError', 'grantAccessModal');
 });
 
 // ---- Mark Resolved ----
-function markResolved(queryId) {
-  if (!confirm('Mark this query as resolved?')) return;
-  const data = new FormData();
-  data.append('action', 'mark_resolved');
-  data.append('query_id', queryId);
-  fetch('{$urlQueryAction}', { method: 'POST', body: data })
-    .then(r => r.json())
-    .then(res => { if (res.success) location.reload(); else alert(res.message || 'Error'); });
+function markResolved(query) {
+  activeQuery = query;
+  renderQueryDetails('resolveQueryDetails', query);
+  document.getElementById('resolveError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('resolveQueryModal')).show();
 }
+
+document.getElementById('confirmResolveBtn').addEventListener('click', function () {
+  submitQueryAction('mark_resolved', this, 'resolveError', 'resolveQueryModal');
+});
 
 // ---- Delete ----
 function deleteQuery(queryId) {
@@ -364,6 +488,7 @@ function deleteQuery(queryId) {
   const data = new FormData();
   data.append('action', 'delete');
   data.append('query_id', queryId);
+  appendCsrf(data);
   fetch('{$urlQueryAction}', { method: 'POST', body: data })
     .then(r => r.json())
     .then(res => { if (res.success) location.reload(); else alert(res.message || 'Error'); });
@@ -420,23 +545,31 @@ function setLoading(btn, loading) {
     hideMenu();
 
     var d = btn.dataset;
-    var qid     = d.qid;
-    var name    = d.qname;
-    var email   = d.qemail;
-    var subject = d.qsubject;
-    var uid     = parseInt(d.quid, 10);
-    var status  = d.qstatus;
-    var access  = d.qaccess === '1';
+    var query = {
+      id: parseInt(d.qid, 10),
+      name: d.qname,
+      email: d.qemail,
+      phone: d.qphone,
+      subject: d.qsubject,
+      message: d.qmessage,
+      createdAt: d.qcreated,
+      replyMessage: d.qreply,
+      repliedAt: d.qrepliedat,
+      userId: parseInt(d.quid, 10),
+      status: d.qstatus,
+      hasAccess: d.qaccess === '1'
+    };
 
     // Build items
     var items = [];
 
+    items.push({ label:'<i class="bi bi-eye me-2 text-primary"></i>View Full Query', action:'view' });
     items.push({ label:'<i class="bi bi-reply me-2 text-primary"></i>Reply &amp; Resolve', action:'reply' });
 
-    if (!access && uid > 0) {
+    if (!query.hasAccess && query.userId > 0) {
       items.push({ label:'<i class="bi bi-pencil-square me-2 text-warning"></i>Grant Edit Access', action:'grant' });
     }
-    if (status === 'pending') {
+    if (query.status === 'pending') {
       items.push({ label:'<i class="bi bi-check-circle me-2 text-success"></i>Mark Resolved', action:'resolve' });
     }
     items.push({ sep: true });
@@ -453,10 +586,11 @@ function setLoading(btn, loading) {
       a.addEventListener('click', function(e) {
         e.preventDefault();
         hideMenu();
-        if (item.action === 'reply')   openReplyModal(qid, name, email, subject);
-        if (item.action === 'grant')   grantEditAccess(qid, uid, name);
-        if (item.action === 'resolve') markResolved(qid);
-        if (item.action === 'delete')  deleteQuery(qid);
+        if (item.action === 'view')    openViewModal(query);
+        if (item.action === 'reply')   openReplyModal(query);
+        if (item.action === 'grant')   grantEditAccess(query);
+        if (item.action === 'resolve') markResolved(query);
+        if (item.action === 'delete')  deleteQuery(query.id);
       });
       li.appendChild(a);
       menu.appendChild(li);

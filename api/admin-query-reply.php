@@ -16,6 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+SecurityHelper::verifyCsrf();
+
 $queryId      = (int)($_POST['query_id']      ?? 0);
 $replyMessage = trim($_POST['reply_message']  ?? '');
 $grantAccess  = ($_POST['grant_access']       ?? '0') === '1';
