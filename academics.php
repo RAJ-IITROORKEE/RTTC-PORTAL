@@ -83,21 +83,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (trim((string) $d[$r]) === '') $errors[$r] = 'Required.';
     }
 
-    // Readonly inputs are not trusted. Resolve result fields from the current
-    // provisional list before writing to the database.
-    $provisionalStudent = (new ProvisionalStudentRepository(ROOT_PATH . '/PROVISIONAL LIST.csv'))
-        ->findByRollNo($d['gubedcet_rollno']);
-    if ($provisionalStudent === null) {
-        $errors['gubedcet_rollno'] = 'This roll number was not found in the current provisional list.';
+    // Readonly inputs are not trusted. Resolve result fields from the final
+    // merit list before writing to the database.
+    try {
+        $finalMeritStudent = (new GubedcetMeritListRepository(ROOT_PATH . '/final_list/GUBEDCET 2026 FINAL LIST.csv'))
+            ->findByRollNo($d['gubedcet_rollno']);
+    } catch (Throwable $exception) {
+        error_log('Final merit list lookup failed: ' . $exception->getMessage());
+        $finalMeritStudent = null;
+        $errors['gubedcet_rollno'] = 'GUBEDCET final merit data is temporarily unavailable. Please try again.';
+    }
+    if ($finalMeritStudent === null) {
+        if (!isset($errors['gubedcet_rollno'])) {
+            $errors['gubedcet_rollno'] = 'This roll number was not found in the GUBEDCET final merit list.';
+        }
+    } elseif ($finalMeritStudent !== null && ($finalMeritStudent['total_marks'] === '' || $finalMeritStudent['rank'] === '')) {
+        $errors['gubedcet_rollno'] = 'This result is marked as rejected in the GUBEDCET final merit list and cannot be used for admission.';
     } else {
-        $d['gubedcet_name'] = $provisionalStudent['name'];
-        $d['gubedcet_gender'] = $provisionalStudent['gender'];
-        $d['gubedcet_category'] = $provisionalStudent['category'];
-        $d['gubedcet_booklet_series'] = $provisionalStudent['booklet_series'];
-        $d['gubedcet_marks'] = $provisionalStudent['total_marks'];
-        $d['gubedcet_rank'] = $provisionalStudent['rank'];
-        $d['gubedcet_correct'] = $provisionalStudent['correct_marks'];
-        $d['gubedcet_wrong'] = $provisionalStudent['wrong_marks'];
+        $d['gubedcet_name'] = $finalMeritStudent['name'];
+        $d['gubedcet_gender'] = $finalMeritStudent['gender'];
+        $d['gubedcet_category'] = $finalMeritStudent['category'];
+        $d['gubedcet_booklet_series'] = $finalMeritStudent['booklet_series'];
+        $d['gubedcet_marks'] = $finalMeritStudent['total_marks'];
+        $d['gubedcet_rank'] = $finalMeritStudent['rank'];
+        $d['gubedcet_correct'] = $finalMeritStudent['correct_marks'];
+        $d['gubedcet_wrong'] = $finalMeritStudent['wrong_marks'];
         $d['gubedcet_unattempted'] = '';
 
         foreach (['gubedcet_marks', 'gubedcet_rank'] as $field) {
@@ -593,8 +603,8 @@ ob_start();
                         <div class="invalid-feedback" id="rollno_err">
                             <?= $errors['gubedcet_rollno'] ?? 'Enter a valid 10-digit roll number.' ?>
                         </div>
-                        <div id="rollno_notfound" class="text-danger small mt-1" style="display:none;">
-                            Roll number not found in GUBEDCET 2026 results.
+                        <div id="rollno_lookup_message" class="text-danger small mt-1" style="display:none;">
+                            Roll number not found or not eligible in the GUBEDCET 2026 final merit list.
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -732,7 +742,7 @@ ob_start();
 document.addEventListener('DOMContentLoaded', function () {
 
     // ── Constants ────────────────────────────────────────────────────────────
-    const LOOKUP_URL = '<?= route('api.provisional-student') ?>';
+    const LOOKUP_URL = '<?= route('api.gubedcet-final-merit') ?>';
     const YEAR_MIN   = 1990;
     const YEAR_MAX   = 2027;
 
@@ -741,7 +751,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const saveBtn    = document.getElementById('acadSaveBtn');
     const declCheck  = document.getElementById('academicDeclaration');
     const rollnoInput    = document.getElementById('gubedcet_rollno');
-    const rollnoNotFound = document.getElementById('rollno_notfound');
+    const rollnoLookupMessage = document.getElementById('rollno_lookup_message');
 
     const previewModal = new bootstrap.Modal(document.getElementById('acadPreviewModal'));
     const confirmModal = new bootstrap.Modal(document.getElementById('acadConfirmModal'));
@@ -896,7 +906,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const el = document.getElementById(id);
             if (el) el.value = student[key] ?? '';
         }
-        // The provisional list has no unattempted column.
+        // The final merit list has no unattempted column.
         const ua = document.getElementById('gubedcet_unattempted');
         if (ua) ua.value = '';
     }
@@ -915,33 +925,40 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: {'Accept': 'application/json'},
             signal: lookupRequest.signal
         })
-            .then(response => response.ok ? response.json() : Promise.reject(response))
+            .then(response => response.json().catch(() => ({})).then(payload => {
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'GUBEDCET final merit data is temporarily unavailable. Please try again.');
+                }
+                return payload;
+            }))
             .then(payload => {
                 if (rollnoInput.value.trim() !== val) return;
-                if (payload.success) {
-                    fillGubedcetFields(payload.student);
-                    lookupPending = false;
-                    rollnoValid = true;
-                    rollnoInput.setCustomValidity('');
-                    toggleSaveBtn();
-                } else {
-                    return Promise.reject(payload);
-                }
+                fillGubedcetFields(payload.student);
+                lookupPending = false;
+                rollnoValid = true;
+                rollnoInput.setCustomValidity('');
+                toggleSaveBtn();
             })
             .catch(error => {
                 if (error.name === 'AbortError' || rollnoInput.value.trim() !== val) return;
                 clearGubedcetFields();
                 lookupPending = false;
                 rollnoValid = false;
-                rollnoInput.setCustomValidity('Roll number not found in the GUBEDCET provisional list.');
+                rollnoInput.classList.remove('is-valid');
+                rollnoInput.classList.add('is-invalid');
+                const message = error.message || 'GUBEDCET final merit data is temporarily unavailable. Please try again.';
+                rollnoInput.setCustomValidity(message);
                 toggleSaveBtn();
-                if (rollnoNotFound) rollnoNotFound.style.display = 'block';
+                if (rollnoLookupMessage) {
+                    rollnoLookupMessage.textContent = message;
+                    rollnoLookupMessage.style.display = 'block';
+                }
             });
     }
 
     rollnoInput?.addEventListener('input', function () {
         const val = this.value.trim();
-        if (rollnoNotFound) rollnoNotFound.style.display = 'none';
+        if (rollnoLookupMessage) rollnoLookupMessage.style.display = 'none';
 
         if (val.length === 10 && /^\d{10}$/.test(val)) {
             this.classList.remove('is-invalid');

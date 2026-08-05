@@ -8,6 +8,7 @@ Options -Indexes
 </FilesMatch>
 
 RewriteEngine On
+RewriteRule ^final_list/ - [F,L,NC]
 
 # ── Clean URL rewrites ────────────────────────────────────────
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -26,7 +27,7 @@ RewriteRule ^payment/confirmation$    payment/confirmation.php [L,QSA]
 RewriteRule ^api/send-otp$            api/send-otp.php [L,QSA]
 RewriteRule ^api/verify-otp$          api/verify-otp.php [L,QSA]
 RewriteRule ^api/check-email$         api/check-email.php [L,QSA]
-RewriteRule ^api/provisional-student$  api/provisional-student.php [L,QSA]
+RewriteRule ^api/final-merit-student$  api/final-merit-student.php [L,QSA]
 RewriteRule ^api/payment-process$     api/payment-process.php [L,QSA]
 RewriteRule ^api/payment-webhook$     api/payment-webhook.php [L,QSA]
 RewriteRule ^admin/login$             admin/login.php [L,QSA]
@@ -40,7 +41,7 @@ RewriteRule ^admin/payments$          admin/payments/index.php [L,QSA]
 RewriteRule ^admin/settings$          admin/settings.php [L,QSA]
 RewriteRule ^admin/notice-documents$  admin/notice-documents.php [L,QSA]
 RewriteRule ^admin/marquee$           admin/marquee.php [L,QSA]
-RewriteRule ^admin/provisional-students$ admin/provisional-students/index.php [L,QSA]
+RewriteRule ^admin/final-merit-list$   admin/final-merit-list/index.php [L,QSA]
 RewriteRule ^admin/queries$           admin/queries/index.php [L,QSA]
 RewriteRule ^admin/documents$         admin/documents/index.php [L,QSA]
 RewriteRule ^request-query$           request-query.php [L,QSA]

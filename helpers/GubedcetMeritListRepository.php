@@ -1,10 +1,10 @@
 <?php
 /**
- * Read-only access to the current GUBEDCET provisional result CSV.
+ * Read-only access to the current GUBEDCET final-merit result CSV.
  */
 if (!defined('APP_INIT')) die('Direct access not permitted');
 
-class ProvisionalStudentRepository
+class GubedcetMeritListRepository
 {
     private const COLUMNS = [
         'Sl. No.' => 'serial_no',
@@ -172,18 +172,18 @@ class ProvisionalStudentRepository
     private function openCsv(): array
     {
         if (!is_file($this->csvPath) || !is_readable($this->csvPath)) {
-            throw new RuntimeException('The provisional student data file is unavailable.');
+            throw new RuntimeException('The final-merit student data file is unavailable.');
         }
 
         $handle = fopen($this->csvPath, 'rb');
         if ($handle === false) {
-            throw new RuntimeException('The provisional student data file could not be opened.');
+            throw new RuntimeException('The final-merit student data file could not be opened.');
         }
 
         $headers = fgetcsv($handle);
         if ($headers === false) {
             fclose($handle);
-            throw new RuntimeException('The provisional student data file is empty.');
+            throw new RuntimeException('The final-merit student data file is empty.');
         }
 
         $columnMap = [];
@@ -199,7 +199,7 @@ class ProvisionalStudentRepository
 
         if (count($columnMap) !== count(self::COLUMNS)) {
             fclose($handle);
-            throw new RuntimeException('The provisional student data file has an invalid header.');
+            throw new RuntimeException('The final-merit student data file has an invalid header.');
         }
 
         return [$handle, $columnMap];

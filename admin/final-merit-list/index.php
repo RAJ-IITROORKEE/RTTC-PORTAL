@@ -13,7 +13,7 @@ $sort = trim((string) ($_GET['sort'] ?? 'serial_no'));
 $direction = trim((string) ($_GET['direction'] ?? 'asc'));
 
 try {
-    $result = (new ProvisionalStudentRepository(ROOT_PATH . '/PROVISIONAL LIST.csv'))
+    $result = (new GubedcetMeritListRepository(ROOT_PATH . '/final_list/GUBEDCET 2026 FINAL LIST.csv'))
         ->browse($search, $gender, $category, $page, 10, $sort, $direction);
     $loadError = '';
 } catch (Throwable $exception) {
@@ -23,16 +23,16 @@ try {
         'stats' => ['total_students' => 0, 'average_marks' => null, 'highest_marks' => null, 'lowest_marks' => null, 'gender' => [], 'category' => []],
         'filters' => ['genders' => [], 'categories' => []],
     ];
-    $loadError = 'The provisional student list is temporarily unavailable.';
+    $loadError = 'The final merit list is temporarily unavailable.';
 }
 
 $stats = $result['stats'];
-$pageTitle = 'Provisional Student List - Admin RTTC 2026';
-$activePage = 'provisional-students';
-$breadcrumb = [['label' => 'Provisional Student List']];
+$pageTitle = 'Final Merit List - Admin RTTC 2026';
+$activePage = 'final-merit-list';
+$breadcrumb = [['label' => 'Final Merit List']];
 
 $query = function (int $pageNumber) use ($search, $gender, $category, $sort, $direction): string {
-    return route('admin.provisional-students', [
+    return route('admin.final-merit-list', [
         'search' => $search,
         'gender' => $gender,
         'category' => $category,
@@ -50,8 +50,8 @@ ob_start();
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-1"><i class="bi bi-database-fill-check me-2 text-primary"></i>Provisional Student List</h4>
-        <p class="text-muted small mb-0">Read-only current-year GUBEDCET result information. Search is available across every CSV field.</p>
+        <h4 class="fw-bold mb-1"><i class="bi bi-database-fill-check me-2 text-primary"></i>GUBEDCET Final Merit List</h4>
+        <p class="text-muted small mb-0">Read-only official GUBEDCET 2026 final-merit information. Search is available across every CSV field.</p>
     </div>
     <span class="badge text-bg-light border"><i class="bi bi-shield-lock me-1"></i>Admin only</span>
 </div>
@@ -112,7 +112,7 @@ ob_start();
                 </select>
             </div>
             <div class="col-sm-6 col-lg-1"><button class="btn btn-primary w-100" type="submit" title="Search and sort"><i class="bi bi-search"></i></button></div>
-            <div class="col-sm-6 col-lg-1"><a class="btn btn-outline-secondary w-100" href="<?= route('admin.provisional-students') ?>">Reset</a></div>
+            <div class="col-sm-6 col-lg-1"><a class="btn btn-outline-secondary w-100" href="<?= route('admin.final-merit-list') ?>">Reset</a></div>
         </form>
     </div>
 </div>
@@ -124,7 +124,7 @@ ob_start();
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>Roll No.</th><th>Name</th><th>Gender</th><th>Category</th><th>Booklet</th><th>Correct</th><th>Wrong</th><th>Total</th><th>Rank</th></tr></thead>
+            <thead class="table-light"><tr><th>Roll No.</th><th>Name</th><th>Gender</th><th>Category</th><th>Booklet / Status</th><th>Correct</th><th>Wrong</th><th>Total</th><th>Rank</th></tr></thead>
             <tbody>
             <?php foreach ($result['rows'] as $student): ?>
                 <tr>
@@ -144,7 +144,7 @@ ob_start();
         </table>
     </div>
     <?php if ($result['total_pages'] > 1): ?>
-    <div class="card-footer bg-white"><nav aria-label="Provisional student pages"><ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap">
+    <div class="card-footer bg-white"><nav aria-label="Final merit list pages"><ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap">
         <?php if ($result['page'] > 1): ?><li class="page-item"><a class="page-link" href="<?= $query($result['page'] - 1) ?>">Previous</a></li><?php endif; ?>
         <?php for ($number = max(1, $result['page'] - 2); $number <= min($result['total_pages'], $result['page'] + 2); $number++): ?><li class="page-item <?= $number === $result['page'] ? 'active' : '' ?>"><a class="page-link" href="<?= $query($number) ?>"><?= $number ?></a></li><?php endfor; ?>
         <?php if ($result['page'] < $result['total_pages']): ?><li class="page-item"><a class="page-link" href="<?= $query($result['page'] + 1) ?>">Next</a></li><?php endif; ?>

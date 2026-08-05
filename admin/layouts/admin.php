@@ -55,8 +55,8 @@ if ($queryCountResult) {
         <a href="<?= route('admin.documents') ?>" class="sidebar-link <?= ($activePage ?? '') === 'documents' ? 'active' : '' ?>">
             <i class="bi bi-file-earmark-check-fill"></i><span>Documents</span>
         </a>
-        <a href="<?= route('admin.provisional-students') ?>" class="sidebar-link <?= ($activePage ?? '') === 'provisional-students' ? 'active' : '' ?>">
-            <i class="bi bi-database-fill-check"></i><span>Provisional List</span>
+        <a href="<?= route('admin.final-merit-list') ?>" class="sidebar-link <?= ($activePage ?? '') === 'final-merit-list' ? 'active' : '' ?>">
+            <i class="bi bi-database-fill-check"></i><span>Final Merit List</span>
         </a>
 
         <div class="nav-section-label">Support</div>
