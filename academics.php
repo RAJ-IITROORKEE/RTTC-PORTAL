@@ -651,11 +651,6 @@ ob_start();
                         <input type="text" name="gubedcet_wrong" id="gubedcet_wrong"
                                class="form-control bg-light" value="<?= dv($data,'gubedcet_wrong') ?>" readonly>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Unattempted</label>
-                        <input type="text" name="gubedcet_unattempted" id="gubedcet_unattempted"
-                               class="form-control bg-light" value="<?= dv($data,'gubedcet_unattempted') ?>" readonly>
-                    </div>
                 </div>
             </div>
         </div>
@@ -890,7 +885,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function clearGubedcetFields() {
         ['gubedcet_name','gubedcet_marks','gubedcet_rank',
-         'gubedcet_correct','gubedcet_wrong','gubedcet_unattempted',
+         'gubedcet_correct','gubedcet_wrong',
          'gubedcet_category','gubedcet_gender','gubedcet_booklet_series']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
@@ -906,9 +901,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const el = document.getElementById(id);
             if (el) el.value = student[key] ?? '';
         }
-        // The final merit list has no unattempted column.
-        const ua = document.getElementById('gubedcet_unattempted');
-        if (ua) ua.value = '';
     }
 
     let lookupRequest = null;

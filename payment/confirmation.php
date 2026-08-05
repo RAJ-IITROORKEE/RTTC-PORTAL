@@ -24,7 +24,7 @@ $stmt = $db->prepare(
             a.masters_total_marks, a.masters_percentage, a.masters_division,
              a.gubedcet_rollno, a.gubedcet_marks, a.gubedcet_rank, a.gubedcet_name,
              a.gubedcet_category, a.gubedcet_gender, a.gubedcet_booklet_series,
-             a.gubedcet_correct, a.gubedcet_wrong, a.gubedcet_unattempted,
+             a.gubedcet_correct, a.gubedcet_wrong,
              a.gu_registered, a.gu_reg_no, a.gu_reg_year,
             a.migrated, a.other_university,
             d.photo, d.signature,
