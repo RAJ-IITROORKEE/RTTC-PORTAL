@@ -12,10 +12,13 @@ $db = db();
 $stats = $db->query("
     SELECT
         COUNT(*) AS total,
-        SUM(status = 'pending') AS pending,
-        SUM(status = 'resolved') AS resolved,
-        SUM(edit_access_granted = 1) AS access_granted
-    FROM student_queries
+        SUM(q.status = 'pending') AS pending,
+        SUM(q.status = 'resolved') AS resolved,
+        SUM(CASE WHEN q.user_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM user_edit_access ea
+            WHERE ea.user_id = q.user_id AND ea.is_active = 1 AND ea.expires_at > NOW()
+        ) THEN 1 ELSE 0 END) AS access_granted
+    FROM student_queries q
 ")->fetch_assoc();
 
 // Filters
@@ -38,7 +41,12 @@ if ($search !== '') {
     $types  .= 'sss';
 }
 
-$sql = "SELECT q.*, u.username FROM student_queries q
+$sql = "SELECT q.*, u.username,
+        CASE WHEN q.user_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM user_edit_access ea
+            WHERE ea.user_id = q.user_id AND ea.is_active = 1 AND ea.expires_at > NOW()
+        ) THEN 1 ELSE 0 END AS has_active_edit_access
+        FROM student_queries q
         LEFT JOIN users u ON u.id = q.user_id
         $where
         ORDER BY q.created_at DESC";
@@ -162,7 +170,7 @@ ob_start();
               <?php if ($q['phone']): ?>
                 <div class="text-muted small"><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($q['phone']) ?></div>
               <?php endif; ?>
-              <?php if ($q['edit_access_granted']): ?>
+              <?php if ($q['has_active_edit_access']): ?>
                 <span class="badge bg-purple-subtle text-purple mt-1" style="background:#ede7f6;color:#7c3aed;">Edit Access Given</span>
               <?php endif; ?>
             </td>
@@ -198,7 +206,7 @@ ob_start();
                         data-qrepliedat="<?= htmlspecialchars($q['replied_at'] ?? '', ENT_QUOTES) ?>"
                         data-quid="<?= (int)($q['user_id'] ?? 0) ?>"
                         data-qstatus="<?= $q['status'] ?>"
-                        data-qaccess="<?= $q['edit_access_granted'] ? '1' : '0' ?>"
+                        data-qaccess="<?= $q['has_active_edit_access'] ? '1' : '0' ?>"
                         aria-label="Actions">
                   <i class="bi bi-three-dots-vertical"></i>
                 </button>
@@ -278,6 +286,30 @@ ob_start();
         <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-warning fw-semibold" id="confirmGrantBtn">
           <span class="btn-text"><i class="bi bi-check-lg me-1"></i>Confirm Grant</span>
+          <span class="spinner-border spinner-border-sm d-none"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Revoke Access Modal -->
+<div class="modal fade" id="revokeAccessModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-slash-circle me-2 text-danger"></i>Revoke Edit Access</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="revokeQueryDetails" class="mb-3"></div>
+        <p class="mb-0">Remove this student's active edit access? The student will no longer be able to modify submitted forms.</p>
+        <div id="revokeError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-semibold" id="confirmRevokeBtn">
+          <span class="btn-text"><i class="bi bi-slash-circle me-1"></i>Revoke Access</span>
           <span class="spinner-border spinner-border-sm d-none"></span>
         </button>
       </div>
@@ -438,6 +470,13 @@ function grantEditAccess(query) {
   new bootstrap.Modal(document.getElementById('grantAccessModal')).show();
 }
 
+function revokeEditAccess(query) {
+  activeQuery = query;
+  renderQueryDetails('revokeQueryDetails', query);
+  document.getElementById('revokeError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('revokeAccessModal')).show();
+}
+
 function submitQueryAction(action, button, errorId, modalId) {
   const error = document.getElementById(errorId);
   error.classList.add('d-none');
@@ -468,6 +507,10 @@ function submitQueryAction(action, button, errorId, modalId) {
 
 document.getElementById('confirmGrantBtn').addEventListener('click', function () {
   submitQueryAction('grant_access', this, 'grantError', 'grantAccessModal');
+});
+
+document.getElementById('confirmRevokeBtn').addEventListener('click', function () {
+  submitQueryAction('revoke_access', this, 'revokeError', 'revokeAccessModal');
 });
 
 // ---- Mark Resolved ----
@@ -566,7 +609,9 @@ function setLoading(btn, loading) {
     items.push({ label:'<i class="bi bi-eye me-2 text-primary"></i>View Full Query', action:'view' });
     items.push({ label:'<i class="bi bi-reply me-2 text-primary"></i>Reply &amp; Resolve', action:'reply' });
 
-    if (!query.hasAccess && query.userId > 0) {
+    if (query.hasAccess && query.userId > 0) {
+      items.push({ label:'<i class="bi bi-slash-circle me-2 text-danger"></i>Revoke Edit Access', action:'revoke' });
+    } else if (!query.hasAccess && query.userId > 0) {
       items.push({ label:'<i class="bi bi-pencil-square me-2 text-warning"></i>Grant Edit Access', action:'grant' });
     }
     if (query.status === 'pending') {
@@ -589,6 +634,7 @@ function setLoading(btn, loading) {
         if (item.action === 'view')    openViewModal(query);
         if (item.action === 'reply')   openReplyModal(query);
         if (item.action === 'grant')   grantEditAccess(query);
+        if (item.action === 'revoke')  revokeEditAccess(query);
         if (item.action === 'resolve') markResolved(query);
         if (item.action === 'delete')  deleteQuery(query.id);
       });

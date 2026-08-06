@@ -30,6 +30,14 @@ if ($isLoggedIn) {
     if ($pRow) {
         $prefillName  = trim($pRow['firstname'] . ' ' . $pRow['middlename'] . ' ' . $pRow['lastname']);
     }
+
+    $paidStmt = $conn->prepare("SELECT EXISTS (
+        SELECT 1 FROM payment WHERE user_id = ? AND status = 'success'
+    ) AS has_successful_payment");
+    $paidStmt->bind_param('i', $userId);
+    $paidStmt->execute();
+    $hasSuccessfulPayment = !empty($paidStmt->get_result()->fetch_assoc()['has_successful_payment']);
+    $paidStmt->close();
 }
 
 // Release session lock so AJAX requests on this page don't block waiting for it
@@ -60,6 +68,17 @@ ob_start();
       </div>
     </div>
 
+    <div class="alert alert-warning border-0 d-flex gap-3 align-items-start mb-4" style="border-radius:12px;">
+      <i class="bi bi-exclamation-triangle-fill fs-5 mt-1 text-warning flex-shrink-0"></i>
+      <div class="small"><strong>Important:</strong> Any discrepancy in the data during the edit process after admin approval will result in the application being considered rejected. Update details only when necessary and ensure they match your original documents.</div>
+    </div>
+
+    <?php if ($hasSuccessfulPayment): ?>
+    <div class="alert alert-danger border-0 shadow-sm d-flex gap-3 align-items-start" style="border-radius:12px;">
+      <i class="bi bi-lock-fill fs-5 mt-1 flex-shrink-0"></i>
+      <div><strong>Query submission unavailable:</strong> Your application form has already been submitted with successful payment. You cannot raise a query after payment.</div>
+    </div>
+    <?php else: ?>
     <!-- Query Form Card -->
     <div class="card border-0 shadow-sm" style="border-radius:16px;">
       <div class="card-body p-4 p-md-5">
@@ -128,6 +147,7 @@ ob_start();
 
       </div>
     </div>
+    <?php endif; ?>
 
     <!-- Back link -->
     <div class="text-center mt-4">
@@ -166,6 +186,7 @@ $extraFoot = <<<JS
   const formWrap     = document.getElementById('formWrap');
   const successPanel = document.getElementById('successPanel');
   const form         = document.getElementById('queryForm');
+  if (!form) return;
   const submitBtn    = document.getElementById('submitBtn');
   const btnText      = submitBtn.querySelector('.btn-text');
   const spinner      = submitBtn.querySelector('.spinner-border');

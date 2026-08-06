@@ -29,6 +29,23 @@ if (!$userId) {
     exit;
 }
 
+$paidStmt = $conn->prepare("SELECT EXISTS (
+    SELECT 1 FROM payment WHERE user_id = ? AND status = 'success'
+) AS has_successful_payment");
+$paidStmt->bind_param('i', $userId);
+$paidStmt->execute();
+$hasSuccessfulPayment = !empty($paidStmt->get_result()->fetch_assoc()['has_successful_payment']);
+$paidStmt->close();
+
+if ($hasSuccessfulPayment) {
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'message' => 'You cannot raise a query after your application has been submitted with successful payment.',
+    ]);
+    exit;
+}
+
 $contactStmt = $conn->prepare("SELECT email, phone FROM users WHERE id = ? LIMIT 1");
 $contactStmt->bind_param('i', $userId);
 $contactStmt->execute();

@@ -83,6 +83,14 @@ ob_start();
   </div>
 </div>
 
+<!-- Document Submission Notice -->
+<div class="container mt-3">
+  <div class="alert alert-danger d-flex gap-2 align-items-start mb-0" role="alert">
+    <i class="bi bi-file-earmark-lock-fill mt-1 flex-shrink-0"></i>
+    <div><strong>Document Submission Notice:</strong> Once your application form is submitted successfully along with payment, document re-upload is not permitted. Visit the college office during office hours with your original marksheets and relevant documents to submit a hard copy if required.</div>
+  </div>
+</div>
+
 <!-- Hero Row: Notice -->
 <div class="container mt-3 mb-4">
   <div class="row g-3">
