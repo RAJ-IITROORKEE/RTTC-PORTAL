@@ -73,6 +73,7 @@ $offset = ($pageNum - 1) * $perPage;
 
 $rows = null;
 $sql = "SELECT u.id, u.username, u.email, u.phone,
+               COALESCE(NULLIF(TRIM(CONCAT_WS(' ', pd.firstname, NULLIF(pd.middlename, ''), pd.lastname)), ''), u.username) AS name,
                COALESCE(pd.gender, '') AS gender,
                {$effectiveStepSql} AS current_step,
                COALESCE(email_log.status, 'not_sent') AS email_status,
@@ -183,12 +184,13 @@ ob_start();
                 <tbody>
                 <?php if ($rows): while ($row = $rows->fetch_assoc()):
                     $appId = 'RTTC-' . str_pad((string)$row['id'], 5, '0', STR_PAD_LEFT);
+                    $displayName = trim((string)($row['name'] ?? $row['username'] ?? '')) ?: 'Applicant';
                     $step = min(3, max(0, (int)($row['current_step'] ?? 0)));
                     $isSent = ($row['email_status'] ?? '') === 'sent';
                 ?>
                     <tr>
                         <td class="font-monospace small fw-semibold"><?= $appId ?></td>
-                        <td class="fw-semibold"><?= htmlspecialchars($row['name']) ?></td>
+                        <td class="fw-semibold"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($row['email']) ?></td>
                         <td><?= htmlspecialchars($row['phone']) ?></td>
                         <td><?= htmlspecialchars($row['gender'] ?: 'Not provided') ?></td>
