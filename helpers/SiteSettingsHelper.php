@@ -57,20 +57,71 @@ class SiteSettingsHelper
 
     public static function isRegistrationOpen(): bool
     {
-        return self::getSetting('registration_open', '1') === '1';
+        if (self::getSetting('registration_open', '1') !== '1') {
+            return false;
+        }
+
+        $deadline = self::getRegistrationDeadline();
+        return $deadline === null || strtotime($deadline) > time();
     }
 
     public static function setRegistrationOpen(bool $isOpen): bool
     {
         $db = db();
         $value = $isOpen ? '1' : '0';
+        if (!$isOpen) {
+            return self::saveSetting('registration_open', $value)
+                && self::saveSetting('registration_closes_at', '');
+        }
+
+        return self::saveSetting('registration_open', $value)
+            && self::saveSetting('registration_closes_at', '');
+    }
+
+    /**
+     * Start a global registration countdown from the current server time.
+     */
+    public static function startRegistrationTimer(int $days, int $hours): bool
+    {
+        $days = max(0, $days);
+        $hours = max(0, min(23, $hours));
+        $totalHours = ($days * 24) + $hours;
+        if ($totalHours < 1) {
+            return false;
+        }
+
+        $deadline = (new DateTimeImmutable('now'))->modify('+' . $totalHours . ' hours')->format('Y-m-d H:i:s');
+        return self::saveSetting('registration_open', '1')
+            && self::saveSetting('registration_closes_at', $deadline);
+    }
+
+    public static function getRegistrationDeadline(): ?string
+    {
+        $value = trim(self::getSetting('registration_closes_at', ''));
+        if ($value === '' || strtotime($value) === false) {
+            return null;
+        }
+        return date('Y-m-d H:i:s', strtotime($value));
+    }
+
+    public static function isRegistrationTimerActive(): bool
+    {
+        $deadline = self::getRegistrationDeadline();
+        return self::getSetting('registration_open', '1') === '1'
+            && $deadline !== null
+            && strtotime($deadline) > time();
+    }
+
+    private static function saveSetting(string $key, string $value): bool
+    {
+        $db = db();
         $stmt = $db->prepare("INSERT INTO site_settings (setting_key, setting_value)
-                              VALUES ('registration_open', ?)
+                              VALUES (?, ?)
                               ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
         if (!$stmt) {
             return false;
         }
-        $stmt->bind_param('s', $value);
+        $stmt->bind_param('ss', $key, $value);
         $ok = $stmt->execute();
         $stmt->close();
         return $ok;

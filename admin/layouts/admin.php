@@ -52,6 +52,9 @@ if ($queryCountResult) {
         <a href="<?= route('admin.payments') ?>" class="sidebar-link <?= ($activePage ?? '') === 'payments' ? 'active' : '' ?>">
             <i class="bi bi-credit-card-fill"></i><span>Payments</span>
         </a>
+        <a href="<?= route('admin.unpaid-email') ?>" class="sidebar-link <?= ($activePage ?? '') === 'unpaid-email' ? 'active' : '' ?>">
+            <i class="bi bi-envelope-exclamation-fill"></i><span>Email Unpaid</span>
+        </a>
         <a href="<?= route('admin.documents') ?>" class="sidebar-link <?= ($activePage ?? '') === 'documents' ? 'active' : '' ?>">
             <i class="bi bi-file-earmark-check-fill"></i><span>Documents</span>
         </a>

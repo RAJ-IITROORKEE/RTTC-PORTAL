@@ -146,6 +146,40 @@ html, body {
   background: rgba(255, 255, 255, .28);
   color: #fff;
 }
+
+/* ── Registration Countdown ──────────────────────────────── */
+.registration-countdown-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(var(--rttc-primary-rgb), .15);
+  border-left: 4px solid var(--rttc-primary);
+  border-radius: var(--rttc-radius);
+  background: linear-gradient(110deg, #f0f1ff, #fff);
+  box-shadow: var(--rttc-shadow-sm);
+}
+.registration-countdown-kicker {
+  display: block;
+  color: var(--rttc-primary);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.registration-countdown-copy h5 { color: var(--rttc-primary-dark); font-weight: 700; }
+.registration-countdown-units { display: flex; gap: .55rem; flex-shrink: 0; }
+.registration-countdown-unit {
+  min-width: 74px;
+  padding: .55rem .65rem;
+  border-radius: .65rem;
+  background: var(--rttc-primary);
+  color: #fff;
+  text-align: center;
+}
+.registration-countdown-unit strong { display: block; font-size: 1.35rem; line-height: 1.15; }
+.registration-countdown-unit span { display: block; font-size: .68rem; opacity: .8; }
 @keyframes marquee-scroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-100%); }
@@ -409,6 +443,9 @@ html, body {
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 576px) {
+  .registration-countdown-banner { align-items: flex-start; flex-direction: column; gap: .8rem; }
+  .registration-countdown-units { width: 100%; }
+  .registration-countdown-unit { flex: 1; min-width: 0; }
   .rttc-navbar { padding: .35rem 0; }
   .rttc-navbar .navbar-brand { gap: .45rem; }
   .rttc-navbar .navbar-brand img { width: 48px; height: 48px; }

@@ -42,7 +42,11 @@ if ($types) $cStmt->bind_param($types, ...$params);
 $cStmt->execute();
 $total = $cStmt->get_result()->fetch_row()[0];
 $cStmt->close();
-$totalPages = ceil($total / $perPage);
+$totalPages = max(1, (int)ceil($total / $perPage));
+if ($total > 0) {
+    $pageNum = min($pageNum, $totalPages);
+    $offset = ($pageNum - 1) * $perPage;
+}
 
 // Fetch rows
 $sql = "SELECT u.id, u.username, u.email, u.phone, u.is_verified, u.created_at,
@@ -108,7 +112,7 @@ ob_start();
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 admin-data-table">
                 <thead class="table-light">
                     <tr>
                         <th>App ID</th><th>Name</th><th>Email</th><th>Phone</th>
@@ -151,12 +155,30 @@ ob_start();
     <?php if ($totalPages > 1): ?>
     <div class="card-footer bg-white">
         <nav>
-            <ul class="pagination pagination-sm mb-0 justify-content-center">
-                <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-                <li class="page-item <?= $p === $pageNum ? 'active' : '' ?>">
-                    <a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=<?= $p ?>"><?= $p ?></a>
+            <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap">
+                <li class="page-item <?= $pageNum <= 1 ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=<?= max(1, $pageNum - 1) ?>" aria-label="Previous">&laquo;</a>
                 </li>
+                <?php
+                $startPage = max(1, $pageNum - 2);
+                $endPage = min($totalPages, $pageNum + 2);
+                if ($startPage > 1):
+                ?>
+                    <li class="page-item"><a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=1">1</a></li>
+                    <?php if ($startPage > 2): ?><li class="page-item disabled"><span class="page-link">&hellip;</span></li><?php endif; ?>
+                <?php endif; ?>
+                <?php for ($p = $startPage; $p <= $endPage; $p++): ?>
+                    <li class="page-item <?= $p === $pageNum ? 'active' : '' ?>">
+                        <a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=<?= $p ?>"><?= $p ?></a>
+                    </li>
                 <?php endfor; ?>
+                <?php if ($endPage < $totalPages): ?>
+                    <?php if ($endPage < $totalPages - 1): ?><li class="page-item disabled"><span class="page-link">&hellip;</span></li><?php endif; ?>
+                    <li class="page-item"><a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=<?= $totalPages ?>"><?= $totalPages ?></a></li>
+                <?php endif; ?>
+                <li class="page-item <?= $pageNum >= $totalPages ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?search=<?= urlencode($search) ?>&step=<?= $stepF ?>&page=<?= min($totalPages, $pageNum + 1) ?>" aria-label="Next">&raquo;</a>
+                </li>
             </ul>
         </nav>
     </div>

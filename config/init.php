@@ -15,6 +15,7 @@ require_once ROOT_PATH . '/helpers/SessionHelper.php';
 require_once ROOT_PATH . '/helpers/ValidationHelper.php';
 require_once ROOT_PATH . '/helpers/RouteHelper.php';
 require_once ROOT_PATH . '/helpers/OTPHelper.php';
+require_once ROOT_PATH . '/helpers/UnpaidEmailHelper.php';
 require_once ROOT_PATH . '/helpers/SiteSettingsHelper.php';
 require_once ROOT_PATH . '/helpers/ApplicationHelper.php';
 require_once ROOT_PATH . '/helpers/GubedcetMeritListRepository.php';

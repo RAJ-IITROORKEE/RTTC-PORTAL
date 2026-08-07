@@ -108,7 +108,8 @@ CREATE TABLE IF NOT EXISTS `site_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `site_settings` (`setting_key`, `setting_value`)
-VALUES ('registration_open', '1');
+VALUES ('registration_open', '1'),
+       ('registration_closes_at', '');
 
 -- ============================================================
 -- TABLE: personal_details
@@ -304,4 +305,23 @@ CREATE TABLE IF NOT EXISTS `payment_deletion_log` (
   KEY `idx_payment_deletion_payment` (`payment_id`),
   KEY `idx_payment_deletion_user` (`user_id`),
   KEY `idx_payment_deletion_admin` (`deleted_by_admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- TABLE: unpaid_email_log (admin reminder delivery history)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `unpaid_email_log` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`     INT(11)         NOT NULL,
+  `email`       VARCHAR(191)    NOT NULL,
+  `status`      ENUM('sending','sent','failed') NOT NULL DEFAULT 'failed',
+  `attempts`    INT(11)         NOT NULL DEFAULT 0,
+  `last_error`  VARCHAR(500)             DEFAULT NULL,
+  `sent_at`     DATETIME                 DEFAULT NULL,
+  `created_at`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_unpaid_email_user` (`user_id`),
+  KEY `idx_unpaid_email_status` (`status`),
+  KEY `idx_unpaid_email_sent_at` (`sent_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

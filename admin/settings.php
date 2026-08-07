@@ -19,6 +19,8 @@ if (!$admin) {
 
 $errors = [];
 $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
+$registrationDeadline = SiteSettingsHelper::getRegistrationDeadline();
+$registrationTimerActive = SiteSettingsHelper::isRegistrationTimerActive();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
@@ -35,10 +37,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('admin.settings');
         }
         $errors['registration'] = 'Unable to update registration availability. Run the latest database migration and try again.';
-        $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
-    }
-
-    if ($action !== 'registration_control') {
+    } elseif ($action === 'registration_timer_start') {
+        $days = filter_var($_POST['duration_days'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 365]]);
+        $hours = filter_var($_POST['duration_hours'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 23]]);
+        if ($days === false || $hours === false || (($days * 24) + $hours) < 1) {
+            $errors['registration'] = 'Please choose at least 1 hour, with days from 0 to 365 and hours from 0 to 23.';
+        } elseif (SiteSettingsHelper::startRegistrationTimer((int)$days, (int)$hours)) {
+            SessionHelper::setFlash('success', 'Registration timer started. Registration will close automatically when it reaches zero.');
+            redirect('admin.settings');
+        } else {
+            $errors['registration'] = 'Unable to start the registration timer. Run the latest database migration and try again.';
+        }
+    } elseif ($action === 'registration_timer_stop') {
+        if (SiteSettingsHelper::setRegistrationOpen(false)) {
+            SessionHelper::setFlash('success', 'The registration timer was stopped and registration is now closed. Applicants who completed documents can still pay.');
+            redirect('admin.settings');
+        }
+        $errors['registration'] = 'Unable to stop the registration timer. Run the latest database migration and try again.';
+    } else {
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -72,6 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
+    $registrationDeadline = SiteSettingsHelper::getRegistrationDeadline();
+    $registrationTimerActive = SiteSettingsHelper::isRegistrationTimerActive();
 }
 
 $pageTitle = 'Settings - Admin RTTC 2026';
@@ -87,13 +107,17 @@ ob_start();
 <div class="row g-4">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom pt-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-door-closed me-2 text-primary"></i>Registration Control</h6>
-                <?php if ($registrationOpen): ?>
-                    <span class="badge bg-success">Open</span>
-                <?php else: ?>
-                    <span class="badge bg-danger">Closed</span>
-                <?php endif; ?>
+                <div class="card-header bg-white border-bottom pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-door-closed me-2 text-primary"></i>Registration Control</h6>
+                <div class="d-flex align-items-center gap-2">
+                    <?php if ($registrationOpen): ?>
+                        <span class="badge bg-success">Open</span>
+                        <?php if ($registrationTimerActive): ?><span class="badge bg-primary">Timer Active</span><?php endif; ?>
+                    <?php else: ?>
+                        <span class="badge bg-danger">Closed</span>
+                        <?php if ($registrationDeadline && strtotime($registrationDeadline) <= time()): ?><span class="badge bg-secondary">Timer Expired</span><?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="card-body">
                 <?php if (!empty($errors['registration'])): ?>
@@ -104,13 +128,28 @@ ob_start();
                         <h6 class="fw-semibold mb-1"><?= $registrationOpen ? 'Registration is currently open.' : 'Registration is currently closed.' ?></h6>
                         <p class="text-muted small mb-0">
                             Closing registration disables new signup and blocks personal details, academic details, and document uploads.
-                            Applicants who have completed document upload can still make payment.
+                             Applicants who have completed document upload can still make payment.
                         </p>
                     </div>
                     <?php if ($registrationOpen): ?>
-                        <button type="button" class="btn btn-danger flex-shrink-0" data-bs-toggle="modal" data-bs-target="#registrationWarningModal">
-                            <i class="bi bi-lock-fill me-1"></i>Close Registration
-                        </button>
+                        <div class="d-flex flex-wrap justify-content-end gap-2 flex-shrink-0">
+                            <?php if ($registrationTimerActive && $registrationDeadline): ?>
+                                <div class="registration-admin-countdown" data-registration-countdown data-deadline="<?= htmlspecialchars(date('c', strtotime($registrationDeadline))) ?>">
+                                    <span class="small text-muted d-block">Automatic close in</span>
+                                    <strong data-countdown-label>Calculating...</strong>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#stopRegistrationTimerModal">
+                                    <i class="bi bi-stop-circle me-1"></i>Stop Timer
+                                </button>
+                            <?php else: ?>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#registrationTimerModal">
+                                    <i class="bi bi-hourglass-split me-1"></i>Start Timer
+                                </button>
+                            <?php endif; ?>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#registrationWarningModal">
+                                <i class="bi bi-lock-fill me-1"></i>Close Now
+                            </button>
+                        </div>
                     <?php else: ?>
                         <form method="POST" action="<?= route('admin.settings') ?>" class="flex-shrink-0">
                             <?= SecurityHelper::csrfField() ?>
@@ -193,6 +232,66 @@ ob_start();
     </div>
 </div>
 
+<?php if ($registrationOpen && !$registrationTimerActive): ?>
+<div class="modal fade" id="registrationTimerModal" tabindex="-1" aria-labelledby="registrationTimerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="registrationTimerLabel"><i class="bi bi-hourglass-split me-2"></i>Start Registration Timer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="<?= route('admin.settings') ?>">
+                <?= SecurityHelper::csrfField() ?>
+                <input type="hidden" name="action" value="registration_timer_start">
+                <div class="modal-body">
+                    <p class="text-muted small">Registration will remain open until this server-side countdown ends. The deadline is calculated from the current server time.</p>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="durationDays" class="form-label">Days</label>
+                            <input type="number" id="durationDays" name="duration_days" class="form-control" min="0" max="365" value="0" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="durationHours" class="form-label">Hours</label>
+                            <input type="number" id="durationHours" name="duration_hours" class="form-control" min="0" max="23" value="1" required>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning small mt-3 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>At zero, new signup and unfinished form submissions will be closed automatically. Applicants who completed document upload can still pay.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill me-1"></i>Start Timer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($registrationOpen && $registrationTimerActive): ?>
+<div class="modal fade" id="stopRegistrationTimerModal" tabindex="-1" aria-labelledby="stopRegistrationTimerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="stopRegistrationTimerLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Stop Registration Timer?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-semibold mb-2">This action will stop the countdown and close registration immediately.</p>
+                <p class="text-muted small mb-0">New signup and unfinished form submissions will be disabled. Applicants who completed document upload can still pay.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Timer</button>
+                <form method="POST" action="<?= route('admin.settings') ?>">
+                    <?= SecurityHelper::csrfField() ?>
+                    <input type="hidden" name="action" value="registration_timer_stop">
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-stop-circle me-1"></i>Yes, Stop Timer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if ($registrationOpen): ?>
 <div class="modal fade" id="registrationWarningModal" tabindex="-1" aria-labelledby="registrationWarningLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -228,4 +327,27 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+$extraFoot = '<script>
+(function () {
+    const timer = document.querySelector("[data-registration-countdown]");
+    if (!timer) return;
+    const deadline = new Date(timer.dataset.deadline).getTime();
+    const label = timer.querySelector("[data-countdown-label]");
+    function update() {
+        const remaining = Math.max(0, deadline - Date.now());
+        if (remaining <= 0) {
+            label.textContent = "Closing now...";
+            window.setTimeout(function () { window.location.reload(); }, 1000);
+            return;
+        }
+        const totalMinutes = Math.floor(remaining / 60000);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+        label.textContent = days + "d " + hours + "h " + minutes + "m";
+        window.setTimeout(update, 10000);
+    }
+    update();
+})();
+</script>';
 include BASE_PATH . '/admin/layouts/admin.php';

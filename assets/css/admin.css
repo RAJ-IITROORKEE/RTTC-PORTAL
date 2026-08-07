@@ -179,6 +179,20 @@ body.admin-body {
     color: #6c757d;
 }
 
+.admin-table-wrap { overflow-x: auto; }
+.admin-data-table { min-width: 860px; }
+.card-footer .pagination { row-gap: .35rem; }
+.registration-admin-countdown {
+    min-width: 112px;
+    padding: .25rem .6rem;
+    border: 1px solid rgba(39,39,109,.15);
+    border-radius: .5rem;
+    background: #f4f5ff;
+    text-align: center;
+    line-height: 1.25;
+}
+.registration-admin-countdown strong { color: var(--primary); font-size: .9rem; }
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
     .admin-sidebar {
@@ -190,4 +204,6 @@ body.admin-body {
     .admin-main {
         margin-left: 0;
     }
+    .admin-content { padding: 1rem; }
+    .card-footer { overflow-x: hidden; }
 }

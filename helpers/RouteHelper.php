@@ -47,8 +47,9 @@ function route(string $name, array $params = []): string
         'admin.dashboard'         => '/admin/dashboard',
         'admin.students'          => '/admin/students',
         'admin.students.index'    => '/admin/students',
-        'admin.students.view'     => '/admin/students/view',
-        'admin.student.view'      => '/admin/students/view', // backward compatibility
+         'admin.students.view'     => '/admin/students/view',
+         'admin.student.view'      => '/admin/students/view', // backward compatibility
+         'admin.unpaid-email'      => '/admin/unpaid-email',
         'admin.applications'      => '/admin/applications',
         'admin.applications.index'=> '/admin/applications',
         'admin.payments'          => '/admin/payments',
@@ -72,7 +73,8 @@ function route(string $name, array $params = []): string
         'api.admin.query-reply'   => '/api/admin-query-reply',
         'api.admin.query-action'  => '/api/admin-query-action',
          'api.admin.delete-user'   => '/api/admin-delete-user',
-         'api.admin.delete-payment'=> '/api/admin-delete-payment',
+          'api.admin.delete-payment'=> '/api/admin-delete-payment',
+          'api.admin.send-unpaid-email' => '/api/admin-send-unpaid-email',
 
         // Errors
         'error.404'               => '/error/404',
