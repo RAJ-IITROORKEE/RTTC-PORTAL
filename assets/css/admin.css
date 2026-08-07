@@ -185,8 +185,8 @@ body.admin-body {
 .admin-document-profile-photo,
 .admin-document-profile-placeholder {
     display: inline-flex;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     align-items: center;
     justify-content: center;
     border: 1px solid #e5e7eb;
@@ -200,10 +200,9 @@ body.admin-body {
 .admin-document-profile-photo {
     border-color: rgba(39,39,109,.2);
     box-shadow: 0 1px 4px rgba(30,40,80,.12);
-    transition: transform .15s ease, box-shadow .15s ease;
+    transition: box-shadow .15s ease;
 }
 .admin-document-profile-photo:hover {
-    transform: scale(1.06);
     box-shadow: 0 2px 8px rgba(30,40,80,.2);
 }
 .registration-admin-countdown {
