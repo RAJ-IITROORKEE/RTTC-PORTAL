@@ -38,9 +38,25 @@ $approved      = (int)($statRow['approved_count']  ?? 0);
 $pending       = (int)($statRow['pending_count']   ?? 0);
 $rejected      = (int)($statRow['rejected_count']  ?? 0);
 
-// ── All users with their document paths ──────────────────────
-$rows = $db->query("
-    SELECT
+// ── Paginated document rows ──────────────────────────────────
+$search = trim((string)($_GET['search'] ?? ''));
+$pageNum = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 20;
+$documentWhere = '';
+$documentParams = [];
+$documentTypes = '';
+if ($search !== '') {
+    $documentWhere = "WHERE u.username LIKE ?
+                         OR u.email LIKE ?
+                         OR CAST(u.id AS CHAR) LIKE ?
+                         OR p.firstname LIKE ?
+                         OR p.lastname LIKE ?";
+    $searchLike = '%' . $search . '%';
+    $documentParams = [$searchLike, $searchLike, $searchLike, $searchLike, $searchLike];
+    $documentTypes = 'sssss';
+}
+
+$documentSelect = "SELECT
         u.id,
         u.username,
         u.email,
@@ -54,12 +70,71 @@ $rows = $db->query("
         d.status AS doc_status
     FROM users u
     LEFT JOIN personal_details p ON p.user_id = u.id
-    LEFT JOIN documents        d ON d.user_id = u.id
-    ORDER BY u.id ASC
-");
+    LEFT JOIN documents        d ON d.user_id = u.id";
+
+$countStmt = $db->prepare("SELECT COUNT(*) FROM users u
+    LEFT JOIN personal_details p ON p.user_id = u.id
+    LEFT JOIN documents d ON d.user_id = u.id
+    $documentWhere");
+$documentTotal = 0;
+if ($countStmt) {
+    if ($documentTypes !== '') $countStmt->bind_param($documentTypes, ...$documentParams);
+    $countStmt->execute();
+    $documentTotal = (int)$countStmt->get_result()->fetch_row()[0];
+    $countStmt->close();
+}
+$totalPages = max(1, (int)ceil($documentTotal / $perPage));
+if ($documentTotal > 0) $pageNum = min($pageNum, $totalPages);
+$offset = ($pageNum - 1) * $perPage;
+
+$rowsStmt = $db->prepare($documentSelect . " $documentWhere ORDER BY u.id ASC LIMIT ? OFFSET ?");
+$rows = false;
+if ($rowsStmt) {
+    $rowsParams = array_merge($documentParams, [$perPage, $offset]);
+    $rowsStmt->bind_param($documentTypes . 'ii', ...$rowsParams);
+    $rowsStmt->execute();
+    $rows = $rowsStmt->get_result();
+    $rowsStmt->close();
+}
+
+// Export always reads every row, independently of the current 20-row page.
+if (($_GET['export'] ?? '') === 'csv') {
+    $exportResult = $db->query($documentSelect . ' ORDER BY u.id ASC');
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="RTTC_Documents_All_' . date('Y-m-d') . '.csv"');
+    header('Pragma: no-cache');
+
+    $csvColumns = [
+        'App ID', 'Name', 'Email', 'Photo', 'Signature', 'HSLC', 'HSSLC', 'Degree', 'Masters',
+        'Caste Cert', 'EWS Cert', 'PWD Cert', 'OBC-NCL Cert', 'GUBEDCET Admit', 'GUBEDCET Result', 'Doc Status'
+    ];
+    $docCols = [
+        'photo', 'signature', 'hslc_marksheet', 'hsslc_marksheet', 'degree_marksheet', 'masters_marksheet',
+        'caste_cert', 'ews_cert', 'pwd_cert', 'obc_ncl_cert', 'gubedcet_admit_card', 'gubedcet_result_sheet'
+    ];
+    $fh = fopen('php://output', 'w');
+    fputcsv($fh, $csvColumns);
+    if ($exportResult) {
+        while ($exportRow = $exportResult->fetch_assoc()) {
+            $csvRow = [
+                'RTTC-' . str_pad((string)$exportRow['id'], 5, '0', STR_PAD_LEFT),
+                trim((string)($exportRow['full_name'] ?? $exportRow['username'] ?? '')) ?: 'Applicant',
+                (string)($exportRow['email'] ?? ''),
+            ];
+            foreach ($docCols as $docCol) {
+                $csvRow[] = !empty($exportRow[$docCol]) ? BASE_URL . '/' . $exportRow[$docCol] : '';
+            }
+            $csvRow[] = ucfirst($exportRow['doc_status'] ?? 'pending');
+            fputcsv($fh, $csvRow);
+        }
+    }
+    fclose($fh);
+    exit;
+}
 
 $pageTitle  = 'Documents — Admin RTTC 2026';
 $activePage = 'documents';
+$queryParams = 'search=' . urlencode($search);
 ob_start();
 ?>
 
@@ -192,13 +267,30 @@ ob_start();
 
 <!-- ===== Documents DataTable ===== -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white border-0 pt-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <h6 class="fw-bold mb-0">
             <i class="bi bi-table me-2 text-primary"></i>All Student Documents
         </h6>
-        <button id="csvExportBtn" class="btn btn-sm btn-outline-success">
-            <i class="bi bi-filetype-csv me-1"></i>Export CSV
-        </button>
+        <a href="<?= route('admin.documents', ['export' => 'csv']) ?>" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-filetype-csv me-1"></i>Export All CSV
+        </a>
+    </div>
+    <div class="card-body border-top py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-8 col-lg-6">
+                <label for="documentSearch" class="form-label small fw-semibold mb-1">Search documents</label>
+                <input type="search" id="documentSearch" name="search" class="form-control" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="Search ID, name or email...">
+            </div>
+            <div class="col-md-2 col-lg-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Search</button>
+            </div>
+            <div class="col-md-2 col-lg-2">
+                <a href="<?= route('admin.documents') ?>" class="btn btn-outline-secondary w-100">Reset</a>
+            </div>
+            <div class="col-lg-2 text-lg-end">
+                <span class="small text-muted d-block mt-2 mt-lg-0">Showing <?= $documentTotal ? (($pageNum - 1) * $perPage) + 1 : 0 ?>–<?= min($documentTotal, $pageNum * $perPage) ?> of <?= number_format($documentTotal) ?></span>
+            </div>
+        </form>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive" style="overflow-x:auto;">
@@ -206,6 +298,7 @@ ob_start();
                 <thead class="table-light">
                     <tr>
                         <th>App ID</th>
+                        <th>Profile</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Photo</th>
@@ -224,8 +317,10 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = $rows->fetch_assoc()):
+                    <?php if ($rows): while ($row = $rows->fetch_assoc()):
                         $appId = 'RTTC-' . str_pad($row['id'], 5, '0', STR_PAD_LEFT);
+                        $displayName = trim((string)($row['full_name'] ?? $row['username'] ?? '')) ?: 'Applicant';
+                        $displayEmail = (string)($row['email'] ?? '');
                         $docCols = [
                             'photo', 'signature',
                             'hslc_marksheet', 'hsslc_marksheet', 'degree_marksheet', 'masters_marksheet',
@@ -237,8 +332,19 @@ ob_start();
                     ?>
                     <tr>
                         <td class="font-monospace fw-semibold"><?= $appId ?></td>
-                        <td class="text-nowrap"><?= htmlspecialchars($row['full_name']) ?></td>
-                        <td><?= htmlspecialchars($row['email']) ?></td>
+                        <td class="text-center">
+                            <?php if (!empty($row['photo'])):
+                                $profileUrl = BASE_URL . '/' . $row['photo'];
+                            ?>
+                                <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="View profile photo">
+                                    <img src="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Profile photo of <?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>" class="admin-document-profile-photo">
+                                </a>
+                            <?php else: ?>
+                                <span class="admin-document-profile-placeholder" title="Profile photo not uploaded"><i class="bi bi-person"></i></span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-nowrap"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($displayEmail, ENT_QUOTES, 'UTF-8') ?></td>
                         <?php foreach ($docCols as $dcol): $url = !empty($row[$dcol]) ? BASE_URL . '/' . $row[$dcol] : ''; ?>
                         <td class="text-center"
                             data-export-url="<?= htmlspecialchars($url) ?>">
@@ -257,11 +363,43 @@ ob_start();
                             <span class="badge bg-<?= $dsBadge ?>" style="font-size:.68rem;"><?= ucfirst($ds) ?></span>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endwhile; endif; ?>
+                    <?php if ($documentTotal === 0): ?>
+                        <tr><td colspan="17" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No document records found.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
+    <?php if ($totalPages > 1): ?>
+    <div class="card-footer bg-white">
+        <nav aria-label="Documents pagination">
+            <ul class="pagination pagination-sm flex-wrap justify-content-center mb-0">
+                <li class="page-item <?= $pageNum <= 1 ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?<?= $queryParams ?>&page=<?= max(1, $pageNum - 1) ?>" aria-label="Previous">&laquo;</a>
+                </li>
+                <?php
+                $startPage = max(1, $pageNum - 2);
+                $endPage = min($totalPages, $pageNum + 2);
+                if ($startPage > 1):
+                ?>
+                    <li class="page-item"><a class="page-link" href="?<?= $queryParams ?>&page=1">1</a></li>
+                    <?php if ($startPage > 2): ?><li class="page-item disabled"><span class="page-link">&hellip;</span></li><?php endif; ?>
+                <?php endif; ?>
+                <?php for ($p = $startPage; $p <= $endPage; $p++): ?>
+                    <li class="page-item <?= $p === $pageNum ? 'active' : '' ?>"><a class="page-link" href="?<?= $queryParams ?>&page=<?= $p ?>"><?= $p ?></a></li>
+                <?php endfor; ?>
+                <?php if ($endPage < $totalPages): ?>
+                    <?php if ($endPage < $totalPages - 1): ?><li class="page-item disabled"><span class="page-link">&hellip;</span></li><?php endif; ?>
+                    <li class="page-item"><a class="page-link" href="?<?= $queryParams ?>&page=<?= $totalPages ?>"><?= $totalPages ?></a></li>
+                <?php endif; ?>
+                <li class="page-item <?= $pageNum >= $totalPages ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?<?= $queryParams ?>&page=<?= min($totalPages, $pageNum + 1) ?>" aria-label="Next">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php
@@ -283,10 +421,6 @@ $statusDonutJson = json_encode([
 ]);
 
 $extraFoot = <<<JS
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <!-- ECharts -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
@@ -327,58 +461,6 @@ echarts.init(document.getElementById('statusDonutChart')).setOption({
     }]
 });
 
-// ===== DataTable =====
-$(document).ready(function () {
-    $('#docsTable').DataTable({
-        pageLength: 10,
-        lengthMenu: [[5, 10, 25, 50, -1], ['5', '10', '25', '50', 'All']],
-        scrollX: true,
-        language: {
-            search:     '<i class="bi bi-search me-1"></i>Search:',
-            lengthMenu: 'Show _MENU_ entries',
-            info:       'Showing _START_ to _END_ of _TOTAL_ students'
-        }
-    });
-}); // end $(document).ready
-
-// ===== CSV Export with full document URLs =====
-document.getElementById('csvExportBtn').addEventListener('click', function () {
-    var rows = [];
-    var headers = [
-        'App ID','Name','Email',
-        'Photo','Signature','HSLC','HSSLC','Degree','Masters',
-        'Caste Cert','EWS Cert','PWD Cert','OBC-NCL Cert',
-        'GUBEDCET Admit','GUBEDCET Result','Doc Status'
-    ];
-    rows.push(headers);
-
-    document.querySelectorAll('#docsTable tbody tr').forEach(function (tr) {
-        var cells = tr.querySelectorAll('td');
-        var row   = [];
-        cells.forEach(function (td, idx) {
-            if (idx >= 3 && idx <= 14) {
-                row.push(td.dataset.exportUrl || '');
-            } else {
-                row.push(td.innerText.trim());
-            }
-        });
-        rows.push(row);
-    });
-
-    var csv = rows.map(function (r) {
-        return r.map(function (cell) {
-            return '"' + (cell + '').replace(/"/g, '""') + '"';
-        }).join(',');
-    }).join('\r\n');
-
-    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'rttc_documents_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-});
 </script>
 JS;
 
