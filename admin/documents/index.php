@@ -332,12 +332,12 @@ ob_start();
                     <tr>
                         <td class="font-monospace fw-semibold"><?= $appId ?></td>
                         <td class="text-nowrap">
-                            <span class="d-inline-flex align-items-center gap-2">
+                            <span class="admin-document-user">
                             <?php if (!empty($row['photo'])):
                                 $profileUrl = BASE_URL . '/' . $row['photo'];
                             ?>
                                 <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="View profile photo">
-                                    <img src="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Profile photo of <?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>" class="admin-document-profile-photo">
+                                    <img src="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Profile photo of <?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>" class="admin-document-profile-photo" width="28" height="28">
                                 </a>
                             <?php else: ?>
                                 <span class="admin-document-profile-placeholder" title="Profile photo not uploaded"><i class="bi bi-person"></i></span>

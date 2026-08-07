@@ -182,13 +182,22 @@ body.admin-body {
 .admin-table-wrap { overflow-x: auto; }
 .admin-data-table { min-width: 860px; }
 .card-footer .pagination { row-gap: .35rem; }
+.admin-document-user {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    height: 28px;
+}
 .admin-document-profile-photo,
 .admin-document-profile-placeholder {
-    display: inline-flex;
-    width: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
+    width: 28px !important;
+    min-width: 28px;
+    max-width: 28px;
+    height: 28px !important;
+    min-height: 28px;
+    max-height: 28px;
+    flex: 0 0 28px;
+    box-sizing: border-box;
     border: 1px solid #e5e7eb;
     border-radius: 50%;
     background: #f4f6f9;
@@ -197,7 +206,13 @@ body.admin-body {
     vertical-align: middle;
     overflow: hidden;
 }
+.admin-document-profile-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 .admin-document-profile-photo {
+    display: block;
     border-color: rgba(39,39,109,.2);
     box-shadow: 0 1px 4px rgba(30,40,80,.12);
     transition: box-shadow .15s ease;
