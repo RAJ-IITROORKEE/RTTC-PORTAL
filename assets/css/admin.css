@@ -185,25 +185,26 @@ body.admin-body {
 .admin-document-profile-photo,
 .admin-document-profile-placeholder {
     display: inline-flex;
-    width: 48px;
-    height: 58px;
+    width: 32px;
+    height: 32px;
     align-items: center;
     justify-content: center;
-    border: 2px solid #e5e7eb;
-    border-radius: .45rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
     background: #f4f6f9;
     color: #8b95a5;
     object-fit: cover;
     vertical-align: middle;
+    overflow: hidden;
 }
 .admin-document-profile-photo {
     border-color: rgba(39,39,109,.2);
-    box-shadow: 0 2px 7px rgba(30,40,80,.12);
+    box-shadow: 0 1px 4px rgba(30,40,80,.12);
     transition: transform .15s ease, box-shadow .15s ease;
 }
 .admin-document-profile-photo:hover {
-    transform: scale(1.08);
-    box-shadow: 0 4px 12px rgba(30,40,80,.2);
+    transform: scale(1.06);
+    box-shadow: 0 2px 8px rgba(30,40,80,.2);
 }
 .registration-admin-countdown {
     min-width: 112px;

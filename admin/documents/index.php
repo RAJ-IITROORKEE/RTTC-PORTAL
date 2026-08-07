@@ -298,7 +298,6 @@ ob_start();
                 <thead class="table-light">
                     <tr>
                         <th>App ID</th>
-                        <th>Profile</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Photo</th>
@@ -332,7 +331,8 @@ ob_start();
                     ?>
                     <tr>
                         <td class="font-monospace fw-semibold"><?= $appId ?></td>
-                        <td class="text-center">
+                        <td class="text-nowrap">
+                            <span class="d-inline-flex align-items-center gap-2">
                             <?php if (!empty($row['photo'])):
                                 $profileUrl = BASE_URL . '/' . $row['photo'];
                             ?>
@@ -342,8 +342,9 @@ ob_start();
                             <?php else: ?>
                                 <span class="admin-document-profile-placeholder" title="Profile photo not uploaded"><i class="bi bi-person"></i></span>
                             <?php endif; ?>
+                                <span><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
+                            </span>
                         </td>
-                        <td class="text-nowrap"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($displayEmail, ENT_QUOTES, 'UTF-8') ?></td>
                         <?php foreach ($docCols as $dcol): $url = !empty($row[$dcol]) ? BASE_URL . '/' . $row[$dcol] : ''; ?>
                         <td class="text-center"
@@ -365,7 +366,7 @@ ob_start();
                     </tr>
                     <?php endwhile; endif; ?>
                     <?php if ($documentTotal === 0): ?>
-                        <tr><td colspan="17" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No document records found.</td></tr>
+                        <tr><td colspan="16" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No document records found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
