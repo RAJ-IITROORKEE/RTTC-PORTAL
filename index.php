@@ -72,9 +72,8 @@ ob_start();
 <div class="container mt-3">
   <div class="registration-countdown-banner" data-registration-countdown data-deadline="<?= htmlspecialchars(date('c', strtotime($registrationDeadline))) ?>">
     <div class="registration-countdown-copy">
-      <span class="registration-countdown-kicker"><i class="bi bi-hourglass-split me-1"></i>Important deadline</span>
-      <h5 class="mb-1">Registration ends in</h5>
-      <p class="mb-0 small">Complete your application and payment before the countdown ends.</p>
+      <span class="registration-countdown-kicker"><i class="bi bi-hourglass-split me-1"></i>Important Deadline</span>
+      <h5 class="mb-1">Application for B.Ed Session (2026-27) end in -</h5>
     </div>
     <div class="registration-countdown-units" aria-live="polite">
       <div class="registration-countdown-unit"><strong data-countdown-days>--</strong><span>Days</span></div>
@@ -102,13 +101,15 @@ ob_start();
   </div>
 </div>
 
-<!-- Document Submission Notice -->
+<!--
+Document Submission Notice
 <div class="container mt-3">
   <div class="alert alert-info border border-info border-2 shadow-sm d-flex gap-2 align-items-start mb-0" role="alert">
     <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
     <div><strong>Document Submission Notice:</strong> Once your application form is submitted successfully along with payment, document re-upload is not permitted. Visit the college office during office hours with your original marksheets and relevant documents to submit a hard copy if required.</div>
   </div>
 </div>
+-->
 
 <!-- Hero Row: Notice -->
 <div class="container mt-3 mb-4">
