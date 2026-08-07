@@ -3,6 +3,8 @@ require_once __DIR__ . '/config/init.php';
 
 $isLoggedIn = SessionHelper::isLoggedIn();
 $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
+$registrationDeadline = SiteSettingsHelper::getRegistrationDeadline();
+$registrationTimerActive = SiteSettingsHelper::isRegistrationTimerActive();
 $progress   = SessionHelper::getProgress();
 
 // Sync progress from DB if logged in
@@ -65,6 +67,23 @@ ob_start();
     <?php endforeach; ?>
   </span>
 </div>
+
+<?php if ($registrationTimerActive && $registrationDeadline): ?>
+<div class="container mt-3">
+  <div class="registration-countdown-banner" data-registration-countdown data-deadline="<?= htmlspecialchars(date('c', strtotime($registrationDeadline))) ?>">
+    <div class="registration-countdown-copy">
+      <span class="registration-countdown-kicker"><i class="bi bi-hourglass-split me-1"></i>Important deadline</span>
+      <h5 class="mb-1">Registration ends in</h5>
+      <p class="mb-0 small">Complete your application and payment before the countdown ends.</p>
+    </div>
+    <div class="registration-countdown-units" aria-live="polite">
+      <div class="registration-countdown-unit"><strong data-countdown-days>--</strong><span>Days</span></div>
+      <div class="registration-countdown-unit"><strong data-countdown-hours>--</strong><span>Hours</span></div>
+      <div class="registration-countdown-unit"><strong data-countdown-minutes>--</strong><span>Minutes</span></div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <!-- Note Alert -->
 <div class="container mt-3">
@@ -283,4 +302,27 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+$extraFoot = '<script>
+(function () {
+    const timer = document.querySelector("[data-registration-countdown]");
+    if (!timer) return;
+    const deadline = new Date(timer.dataset.deadline).getTime();
+    const days = timer.querySelector("[data-countdown-days]");
+    const hours = timer.querySelector("[data-countdown-hours]");
+    const minutes = timer.querySelector("[data-countdown-minutes]");
+    function update() {
+        const remaining = Math.max(0, deadline - Date.now());
+        if (remaining <= 0) {
+            window.location.reload();
+            return;
+        }
+        const totalMinutes = Math.floor(remaining / 60000);
+        days.textContent = Math.floor(totalMinutes / 1440);
+        hours.textContent = Math.floor((totalMinutes % 1440) / 60);
+        minutes.textContent = totalMinutes % 60;
+        window.setTimeout(update, 10000);
+    }
+    update();
+})();
+</script>';
 include __DIR__ . '/views/layouts/main.php';
