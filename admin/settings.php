@@ -131,33 +131,33 @@ ob_start();
                              Applicants who have completed document upload can still make payment.
                         </p>
                     </div>
-                    <?php if ($registrationOpen): ?>
-                        <div class="d-flex flex-wrap justify-content-end gap-2 flex-shrink-0">
-                            <?php if ($registrationTimerActive && $registrationDeadline): ?>
-                                <div class="registration-admin-countdown" data-registration-countdown data-deadline="<?= htmlspecialchars(date('c', strtotime($registrationDeadline))) ?>">
-                                    <span class="small text-muted d-block">Automatic close in</span>
-                                    <strong data-countdown-label>Calculating...</strong>
-                                </div>
-                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#stopRegistrationTimerModal">
-                                    <i class="bi bi-stop-circle me-1"></i>Stop Timer
-                                </button>
-                            <?php else: ?>
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#registrationTimerModal">
-                                    <i class="bi bi-hourglass-split me-1"></i>Start Timer
-                                </button>
-                            <?php endif; ?>
+                    <div class="d-flex flex-wrap justify-content-end gap-2 flex-shrink-0">
+                        <?php if ($registrationTimerActive && $registrationDeadline): ?>
+                            <div class="registration-admin-countdown" data-registration-countdown data-deadline="<?= htmlspecialchars(date('c', strtotime($registrationDeadline))) ?>">
+                                <span class="small text-muted d-block">Automatic close in</span>
+                                <strong data-countdown-label>Calculating...</strong>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#stopRegistrationTimerModal">
+                                <i class="bi bi-stop-circle me-1"></i>Stop Timer
+                            </button>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#registrationTimerModal">
+                                <i class="bi bi-hourglass-split me-1"></i>Start Timer
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($registrationOpen): ?>
                             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#registrationWarningModal">
                                 <i class="bi bi-lock-fill me-1"></i>Close Now
                             </button>
-                        </div>
-                    <?php else: ?>
-                        <form method="POST" action="<?= route('admin.settings') ?>" class="flex-shrink-0">
-                            <?= SecurityHelper::csrfField() ?>
-                            <input type="hidden" name="action" value="registration_control">
-                            <input type="hidden" name="registration_open" value="1">
-                            <button type="submit" class="btn btn-success"><i class="bi bi-unlock-fill me-1"></i>Reopen Registration</button>
-                        </form>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <form method="POST" action="<?= route('admin.settings') ?>">
+                                <?= SecurityHelper::csrfField() ?>
+                                <input type="hidden" name="action" value="registration_control">
+                                <input type="hidden" name="registration_open" value="1">
+                                <button type="submit" class="btn btn-success"><i class="bi bi-unlock-fill me-1"></i>Reopen Registration</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -232,7 +232,7 @@ ob_start();
     </div>
 </div>
 
-<?php if ($registrationOpen && !$registrationTimerActive): ?>
+<?php if (!$registrationTimerActive): ?>
 <div class="modal fade" id="registrationTimerModal" tabindex="-1" aria-labelledby="registrationTimerLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
