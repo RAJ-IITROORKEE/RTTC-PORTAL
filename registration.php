@@ -28,8 +28,9 @@ $editAccess = $stmtEA->num_rows > 0;
 $stmtEA->close();
 
 // View mode when step is already done AND no edit access granted
+// When portal is closed, ALWAYS view-only for personal details (regardless of grants)
 $stepDone = !empty($existing);
-$viewOnly = $stepDone && !$editAccess;
+$viewOnly = $stepDone && (!$editAccess || !$registrationOpen);
 
 // Block any POST in view-only mode (security)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {

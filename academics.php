@@ -37,7 +37,8 @@ $editAccess = $stmtEA->num_rows > 0;
 $stmtEA->close();
 
 $stepDone = !empty($existing);
-$viewOnly = $stepDone && !$editAccess;
+// When portal is closed, ALWAYS view-only for academic details (regardless of grants)
+$viewOnly = $stepDone && (!$editAccess || !$registrationOpen);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
     redirect(route('welcome'), [], 'error', 'Your academic details are in view-only mode. Request edit access from admin.');

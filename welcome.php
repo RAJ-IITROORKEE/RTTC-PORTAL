@@ -121,7 +121,7 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Personal Details</h6>
                     <p class="text-muted small mb-3">Name, DOB, family info, address</p>
-                    <?php if ($currentStep >= 1 && ($registrationOpen || $fullEditAccess)): ?>
+                    <?php if ($currentStep >= 1 && $registrationOpen): ?>
                         <?php if ($fullEditAccess): ?>
                         <a href="<?= route('registration') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
@@ -159,7 +159,7 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Academic Details</h6>
                     <p class="text-muted small mb-3">HSLC, HSSLC, Degree, GUBEDCET</p>
-                    <?php if ($currentStep >= 2 && ($registrationOpen || $fullEditAccess)): ?>
+                    <?php if ($currentStep >= 2 && $registrationOpen): ?>
                         <?php if ($fullEditAccess): ?>
                         <a href="<?= route('academics') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
