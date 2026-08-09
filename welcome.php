@@ -110,6 +110,9 @@ ob_start();
     <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
         <i class="bi bi-lock-fill me-2"></i>
         <strong>Registration is currently closed.</strong> New applications and personal, academic, and document submissions are disabled. Applicants who have completed their documents may still make payment.
+        <?php if ($docEditAccess): ?>
+        <br><i class="bi bi-unlock-fill me-1 text-success"></i><span class="text-success fw-semibold">You have been granted special access to upload/edit your documents.</span>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -216,7 +219,7 @@ ob_start();
                         <?php endif; ?>
                     <?php elseif ($currentStep >= 3): ?>
                         <button class="btn btn-sm btn-secondary" disabled><i class="bi bi-lock me-1"></i>Closed</button>
-                    <?php elseif ($currentStep === 2 && $registrationOpen): ?>
+                    <?php elseif ($currentStep === 2 && ($registrationOpen || $docEditAccess)): ?>
                         <a href="<?= route('documents') ?>" class="btn btn-sm btn-primary">
                             <i class="bi bi-arrow-right-circle me-1"></i>Upload
                         </a>
