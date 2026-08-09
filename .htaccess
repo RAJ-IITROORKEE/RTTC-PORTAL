@@ -60,6 +60,20 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ error/404.php [L,QSA]
 
+# ── ModSecurity bypass for document upload page ───────────────
+# Hostinger WAF blocks multipart file POSTs with apostrophes/special chars
+# in uploaded filenames (e.g. "BAA's file.pdf") — IfModule guards make
+# this a no-op if the module is not loaded or not configurable here.
+<Files "documents.php">
+    <IfModule mod_security.c>
+        SecFilterEngine Off
+        SecFilterScanPOST Off
+    </IfModule>
+    <IfModule mod_security2.c>
+        SecRuleEngine Off
+    </IfModule>
+</Files>
+
 # ── Security headers ──────────────────────────────────────────
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
