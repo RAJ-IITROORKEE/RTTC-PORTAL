@@ -64,9 +64,50 @@ if ($action === 'prepare') {
     ]);
 }
 
+// ── prepare_resend: ALL unpaid users regardless of prior email status ──────
+if ($action === 'prepare_resend') {
+    $stmt = $db->prepare(
+        "SELECT u.id, u.email,
+                COALESCE(NULLIF(TRIM(CONCAT_WS(' ', pd.firstname, NULLIF(pd.middlename, ''), pd.lastname)), ''), u.username) AS name
+         FROM users u
+         LEFT JOIN personal_details pd ON pd.user_id = u.id
+         WHERE u.is_active = 1
+           AND NOT EXISTS (
+               SELECT 1 FROM payment paid
+               WHERE paid.user_id = u.id AND paid.status = 'success'
+           )
+         ORDER BY u.id ASC"
+    );
+
+    if (!$stmt) {
+        unpaidEmailJson(['success' => false, 'message' => 'Database query failed.'], 500);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $recipients = [];
+    while ($row = $result->fetch_assoc()) {
+        $recipients[] = [
+            'id'    => (int)$row['id'],
+            'email' => (string)$row['email'],
+            'name'  => trim((string)$row['name']) ?: 'Applicant',
+        ];
+    }
+    $stmt->close();
+
+    unpaidEmailJson([
+        'success'    => true,
+        'message'    => count($recipients) . ' unpaid applicant(s) ready for re-send.',
+        'recipients' => $recipients,
+    ]);
+}
+
 if ($action !== 'send') {
     unpaidEmailJson(['success' => false, 'message' => 'Invalid action.'], 400);
 }
+
+// force=1 means re-send even if already emailed (used by Re-send All button)
+$force = ($_POST['force'] ?? '0') === '1';
 
 $userId = (int)($_POST['user_id'] ?? 0);
 $subject = trim((string)($_POST['subject'] ?? ''));
@@ -106,21 +147,35 @@ $stmt->close();
 if (!$recipient) {
     unpaidEmailJson(['success' => false, 'message' => 'Applicant is no longer unpaid or could not be found.'], 409);
 }
-if (($recipient['email_status'] ?? '') === 'sent') {
+if (!$force && ($recipient['email_status'] ?? '') === 'sent') {
     unpaidEmailJson(['success' => true, 'skipped' => true, 'message' => 'Email was already sent to this applicant.']);
 }
 
 // Record an in-progress attempt so the admin can distinguish a retryable
 // failure from a successful delivery. Only "sent" is shown as Sent in UI.
-$claim = $db->prepare(
-    "INSERT INTO unpaid_email_log (user_id, email, status, attempts, last_error, sent_at)
-     VALUES (?, ?, 'sending', 1, NULL, NULL)
-     ON DUPLICATE KEY UPDATE
-         email = VALUES(email),
-         status = IF(status = 'sent', 'sent', 'sending'),
-         attempts = IF(status = 'sent', attempts, attempts + 1),
-         last_error = IF(status = 'sent', last_error, NULL)"
-);
+if ($force) {
+    // Force re-send: reset any existing 'sent' record back to 'sending'
+    $claim = $db->prepare(
+        "INSERT INTO unpaid_email_log (user_id, email, status, attempts, last_error, sent_at)
+         VALUES (?, ?, 'sending', 1, NULL, NULL)
+         ON DUPLICATE KEY UPDATE
+             email = VALUES(email),
+             status = 'sending',
+             attempts = attempts + 1,
+             last_error = NULL,
+             sent_at = NULL"
+    );
+} else {
+    $claim = $db->prepare(
+        "INSERT INTO unpaid_email_log (user_id, email, status, attempts, last_error, sent_at)
+         VALUES (?, ?, 'sending', 1, NULL, NULL)
+         ON DUPLICATE KEY UPDATE
+             email = VALUES(email),
+             status = IF(status = 'sent', 'sent', 'sending'),
+             attempts = IF(status = 'sent', attempts, attempts + 1),
+             last_error = IF(status = 'sent', last_error, NULL)"
+    );
+}
 if (!$claim) {
     unpaidEmailJson(['success' => false, 'message' => 'Unable to start the email attempt.'], 500);
 }
@@ -128,7 +183,7 @@ $claim->bind_param('is', $userId, $recipient['email']);
 $claim->execute();
 $claim->close();
 
-if (($recipient['email_status'] ?? '') === 'sent') {
+if (!$force && ($recipient['email_status'] ?? '') === 'sent') {
     unpaidEmailJson(['success' => true, 'skipped' => true, 'message' => 'Email was already sent to this applicant.']);
 }
 

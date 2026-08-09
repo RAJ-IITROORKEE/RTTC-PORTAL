@@ -166,9 +166,14 @@ ob_start();
 
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 pt-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#unpaidEmailModal">
-            <i class="bi bi-send-fill me-1"></i>Send Email to Unpaid
-        </button>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#unpaidEmailModal">
+                <i class="bi bi-send-fill me-1"></i>Send Email to Unpaid
+            </button>
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#unpaidEmailModal" data-mode="resend">
+                <i class="bi bi-arrow-repeat me-1"></i>Re-send to All Unpaid
+            </button>
+        </div>
         <small class="text-muted">
             <?php if ($total > 0): ?>Showing <?= (($pageNum - 1) * $perPage) + 1 ?>–<?= min($total, $pageNum * $perPage) ?> of <?= $total ?> applicants<?php else: ?>No applicants in this view<?php endif; ?>
         </small>
@@ -248,7 +253,7 @@ ob_start();
             <div class="modal-header bg-primary text-white">
                 <div>
                     <h5 class="modal-title fw-bold" id="unpaidEmailModalLabel"><i class="bi bi-envelope-paper-fill me-2"></i>Send Unpaid Reminder</h5>
-                    <small class="text-white-50">The message is sent only to active applicants without a successful payment.</small>
+                    <small class="text-white-50" id="unpaidEmailModalSubtitle">The message is sent only to active applicants without a successful payment.</small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -292,8 +297,39 @@ $extraFoot .= <<<'HTML'
     const progressCount = document.getElementById('unpaidEmailProgressCount');
     const progressBar = document.getElementById('unpaidEmailProgressBar');
     const result = document.getElementById('unpaidEmailResult');
+    const modalTitleEl = document.getElementById('unpaidEmailModalLabel');
+    const modalSubtitleEl = document.getElementById('unpaidEmailModalSubtitle');
 
     if (!sendButton) return;
+
+    // Track whether the modal was opened via the Re-send button
+    let resendMode = false;
+
+    const modalEl = document.getElementById('unpaidEmailModal');
+    if (modalEl) {
+        modalEl.addEventListener('show.bs.modal', function (e) {
+            resendMode = !!(e.relatedTarget && e.relatedTarget.dataset.mode === 'resend');
+            if (modalTitleEl) {
+                modalTitleEl.innerHTML = resendMode
+                    ? '<i class="bi bi-arrow-repeat me-2"></i>Re-send to All Unpaid'
+                    : '<i class="bi bi-envelope-paper-fill me-2"></i>Send Unpaid Reminder';
+            }
+            if (modalSubtitleEl) {
+                modalSubtitleEl.textContent = resendMode
+                    ? 'Re-sends the message to ALL active unpaid applicants, including those already emailed.'
+                    : 'The message is sent only to active applicants without a successful payment.';
+            }
+            sendButton.innerHTML = resendMode
+                ? '<i class="bi bi-arrow-repeat me-1"></i>Re-send to All Unpaid'
+                : '<i class="bi bi-send me-1"></i>Send to All Unpaid / Not Sent';
+            sendButton.className = resendMode ? 'btn btn-warning' : 'btn btn-primary';
+            sendButton.disabled = false;
+            // Reset progress area on each open
+            progress.classList.add('d-none');
+            result.textContent = '';
+            progressBar.style.width = '0%';
+        });
+    }
 
     async function post(data) {
         data.csrf_token = config.csrfToken;
@@ -317,7 +353,10 @@ $extraFoot .= <<<'HTML'
             progress.classList.remove('d-none');
             return;
         }
-        if (!window.confirm('Send this email to every current unpaid applicant marked Not Sent?')) return;
+        const confirmMsg = resendMode
+            ? 'Re-send this email to ALL unpaid applicants (including those already emailed)?'
+            : 'Send this email to every current unpaid applicant marked Not Sent?';
+        if (!window.confirm(confirmMsg)) return;
 
         sendButton.disabled = true;
         progress.classList.remove('d-none');
@@ -328,7 +367,7 @@ $extraFoot .= <<<'HTML'
 
         let prepared;
         try {
-            prepared = await post({action: 'prepare'});
+            prepared = await post({action: resendMode ? 'prepare_resend' : 'prepare'});
         } catch (error) {
             result.className = 'small mt-2 text-danger';
             result.textContent = error.message;
@@ -340,7 +379,9 @@ $extraFoot .= <<<'HTML'
         if (!recipients.length) {
             progressLabel.textContent = 'Nothing to send.';
             result.className = 'small mt-2 text-success';
-            result.textContent = 'All unpaid applicants have already been emailed, or no unpaid applicants exist.';
+            result.textContent = resendMode
+                ? 'No unpaid applicants found.'
+                : 'All unpaid applicants have already been emailed, or no unpaid applicants exist.';
             sendButton.disabled = false;
             return;
         }
@@ -358,6 +399,7 @@ $extraFoot .= <<<'HTML'
                 try {
                     const payload = await post({
                         action: 'send',
+                        force: resendMode ? '1' : '0',
                         user_id: String(recipient.id),
                         subject: subject,
                         template: template
