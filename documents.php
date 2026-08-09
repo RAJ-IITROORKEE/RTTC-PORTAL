@@ -595,9 +595,68 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ─── Confirm submit button ─────────────────────────────────────
-    document.getElementById('docConfirmSubmitBtn')?.addEventListener('click', function () {
-        finalSubmit = true;
-        form.submit();
+    // Uses AJAX with filename sanitization to bypass server WAF rules that
+    // block multipart POST requests containing special chars (apostrophes,
+    // quotes, etc.) in Content-Disposition filename headers.
+    document.getElementById('docConfirmSubmitBtn')?.addEventListener('click', async function () {
+        // Close confirm modal
+        const confirmModalEl = document.getElementById('docConfirmModal');
+        if (confirmModalEl) {
+            const cm = bootstrap.Modal.getInstance(confirmModalEl);
+            if (cm) cm.hide();
+        }
+
+        // Show progress on save button
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading\u2026';
+        }
+
+        // Build FormData with sanitized filenames
+        // Replaces any character that is not alphanumeric, dot, dash or underscore
+        // so WAF Content-Disposition header scanning cannot trigger on filenames.
+        const rawFd   = new FormData(form);
+        const cleanFd = new FormData();
+        for (const [k, v] of rawFd.entries()) {
+            if (v instanceof File && v.size > 0) {
+                const safeName = v.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                cleanFd.append(k, new File([v], safeName, { type: v.type }), safeName);
+            } else {
+                cleanFd.append(k, v);
+            }
+        }
+
+        try {
+            const res = await fetch(window.location.href, {
+                method:      'POST',
+                body:        cleanFd,
+                credentials: 'same-origin'
+            });
+
+            if (res.redirected) {
+                // PHP issued a redirect (success → payment/welcome, or flash redirect)
+                window.location.href = res.url;
+            } else if (!res.ok) {
+                // Server returned 4xx/5xx (WAF still blocking or server error)
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = 'Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>';
+                }
+                alert('Your submission was blocked by the server (HTTP ' + res.status + ').\nPlease contact support and mention error code: DOC-' + res.status + '.');
+            } else {
+                // PHP re-rendered the page (validation errors) → replace content
+                const html = await res.text();
+                document.open();
+                document.write(html);
+                document.close();
+            }
+        } catch (err) {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>';
+            }
+            alert('Network error \u2014 please check your connection and try again.');
+        }
     });
 
     // ─── Preview button ────────────────────────────────────────────
