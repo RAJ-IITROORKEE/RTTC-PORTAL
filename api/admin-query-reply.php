@@ -66,8 +66,8 @@ if ($editAccessGranted) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
     $note = 'Granted via query reply (Query #' . $queryId . ')';
 
-    // Deactivate previous grants for same user
-    $deact = $db->prepare("UPDATE user_edit_access SET is_active = 0 WHERE user_id = ?");
+    // Deactivate previous full-scope grants for same user (preserve document-only grants)
+    $deact = $db->prepare("UPDATE user_edit_access SET is_active = 0 WHERE user_id = ? AND scope = 'all'");
     $deact->bind_param('i', $query['user_id']);
     $deact->execute();
     $deact->close();

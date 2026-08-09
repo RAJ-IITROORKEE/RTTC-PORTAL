@@ -71,7 +71,7 @@ if ($userPwd) {
 
 // ── View-only mode ─────────────────────────────────────────────────────────
 $now    = date('Y-m-d H:i:s');
-$stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1");
+$stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1");
 $stmtEA->bind_param('is', $userId, $now);
 $stmtEA->execute();
 $stmtEA->store_result();
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewOnly) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
 
-    if (!$registrationOpen) {
+    if (!$registrationOpen && !$editAccess) {
         redirect(route('welcome'), [], 'error', 'Registration is currently closed. Documents cannot be submitted or replaced now.');
     }
 
@@ -412,7 +412,7 @@ ob_start();
                 <button type="button" class="btn btn-outline-primary btn-lg px-4" id="docPreviewBtn">
                     <i class="bi bi-eye me-1"></i>Preview Documents
                 </button>
-                <?php if (!$viewOnly && $registrationOpen): ?>
+                <?php if (!$viewOnly && ($registrationOpen || $editAccess)): ?>
                 <button type="submit" class="btn btn-primary btn-lg px-5" id="docSaveBtn" disabled>
                     Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
                 </button>

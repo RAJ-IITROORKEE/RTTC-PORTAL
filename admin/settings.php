@@ -177,6 +177,31 @@ ob_start();
         </div>
     </div>
 
+    <!-- Document Edit Access -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom pt-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-lock2 me-2 text-primary"></i>Document Edit Access</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h6 class="fw-semibold mb-1">Grant document upload access to individual students</h6>
+                        <p class="text-muted small mb-0">
+                            Allow specific students to re-upload documents even when the registration portal is closed.
+                            Search by RTTC ID or email, then grant or revoke access.
+                        </p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="<?= route('admin.document-access') ?>" class="btn btn-primary">
+                            <i class="bi bi-pencil-square me-1"></i>Manage Document Access
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Payment Control -->
     <div class="col-12">
         <div class="card border-0 shadow-sm">

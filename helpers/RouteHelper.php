@@ -66,6 +66,7 @@ function route(string $name, array $params = []): string
 
         // Admin - Documents
         'admin.documents'         => '/admin/documents',
+        'admin.document-access'   => '/admin/document-access',
 
         // Admin - Queries
         'admin.queries'           => '/admin/queries',

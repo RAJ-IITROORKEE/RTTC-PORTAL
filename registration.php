@@ -20,7 +20,7 @@ $stmt->close();
 // ── View-only mode ─────────────────────────────────────────────────────────
 // Determine if admin has granted active edit access
 $now     = date('Y-m-d H:i:s');
-$stmtEA  = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1");
+$stmtEA  = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND scope = 'all' LIMIT 1");
 $stmtEA->bind_param('is', $userId, $now);
 $stmtEA->execute();
 $stmtEA->store_result();

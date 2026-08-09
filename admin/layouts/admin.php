@@ -80,6 +80,9 @@ if ($queryCountResult) {
         <a href="<?= route('admin.export') ?>" class="sidebar-link <?= ($activePage ?? '') === 'export' ? 'active' : '' ?>">
             <i class="bi bi-download"></i><span>Export Data</span>
         </a>
+        <a href="<?= route('admin.document-access') ?>" class="sidebar-link <?= ($activePage ?? '') === 'document-access' ? 'active' : '' ?>">
+            <i class="bi bi-file-earmark-lock2"></i><span>Doc Edit Access</span>
+        </a>
     </nav>
 
     <div class="sidebar-footer">

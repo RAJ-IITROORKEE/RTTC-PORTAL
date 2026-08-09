@@ -69,8 +69,8 @@ switch ($action) {
         $expiresAt    = date('Y-m-d H:i:s', strtotime('+7 days'));
         $note         = 'Granted via admin action (Query #' . $queryId . ')';
 
-        // Deactivate any previous grants
-        $deact = $db->prepare("UPDATE user_edit_access SET is_active = 0 WHERE user_id = ?");
+        // Deactivate any previous full-scope grants (preserve document-only grants)
+        $deact = $db->prepare("UPDATE user_edit_access SET is_active = 0 WHERE user_id = ? AND scope = 'all'");
         $deact->bind_param('i', $targetUserId);
         $deact->execute();
         $deact->close();

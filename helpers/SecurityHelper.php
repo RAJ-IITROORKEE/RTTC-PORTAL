@@ -34,8 +34,13 @@ class SecurityHelper
     {
         $token = $_POST[CSRF_TOKEN_NAME] ?? '';
         if (!self::validateCsrfToken($token)) {
-            http_response_code(403);
-            die('Invalid CSRF token. Please go back and try again.');
+            // Graceful redirect instead of hard 403 die — handles session/token expiry
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            SessionHelper::setFlash('error', 'Your session has expired. Please try submitting the form again.');
+            // Regenerate CSRF token so the reloaded page gets a fresh one
+            self::generateCsrfToken();
+            header('Location: ' . $referer);
+            exit;
         }
     }
 
