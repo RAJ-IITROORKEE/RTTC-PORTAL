@@ -29,6 +29,11 @@ if ((int)($progress['current_step'] ?? 0) < 3) {
     $fail('Please complete and submit your documents before making payment.');
 }
 
+// Payment gate — admin can stop new payments from Settings
+if (!SiteSettingsHelper::isPaymentOpen()) {
+    $fail('Online payment is currently stopped. Please contact the institute.');
+}
+
 $paymentId = trim((string)($_POST['razorpay_payment_id'] ?? ''));
 $orderId   = trim((string)($_POST['razorpay_order_id'] ?? ''));
 $signature = trim((string)($_POST['razorpay_signature'] ?? ''));

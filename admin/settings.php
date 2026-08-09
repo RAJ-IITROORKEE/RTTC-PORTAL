@@ -21,6 +21,7 @@ $errors = [];
 $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
 $registrationDeadline = SiteSettingsHelper::getRegistrationDeadline();
 $registrationTimerActive = SiteSettingsHelper::isRegistrationTimerActive();
+$paymentOpen = SiteSettingsHelper::isPaymentOpen();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::verifyCsrf();
@@ -54,6 +55,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('admin.settings');
         }
         $errors['registration'] = 'Unable to stop the registration timer. Run the latest database migration and try again.';
+    } elseif ($action === 'payment_control') {
+        $requestedPaymentOpen = ($_POST['payment_open'] ?? '0') === '1';
+        if (SiteSettingsHelper::setPaymentOpen($requestedPaymentOpen)) {
+            SessionHelper::setFlash(
+                'success',
+                $requestedPaymentOpen
+                    ? 'Online payment has been resumed. Applicants can now make payments.'
+                    : 'Online payment has been stopped. No new payments will be accepted. All other features remain accessible.'
+            );
+            redirect('admin.settings');
+        }
+        $errors['payment'] = 'Unable to update payment availability. Please try again.';
     } else {
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
@@ -92,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $registrationOpen = SiteSettingsHelper::isRegistrationOpen();
     $registrationDeadline = SiteSettingsHelper::getRegistrationDeadline();
     $registrationTimerActive = SiteSettingsHelper::isRegistrationTimerActive();
+    $paymentOpen = SiteSettingsHelper::isPaymentOpen();
 }
 
 $pageTitle = 'Settings - Admin RTTC 2026';
@@ -155,6 +169,53 @@ ob_start();
                                 <input type="hidden" name="action" value="registration_control">
                                 <input type="hidden" name="registration_open" value="1">
                                 <button type="submit" class="btn btn-success"><i class="bi bi-unlock-fill me-1"></i>Reopen Registration</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Control -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom pt-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-credit-card me-2 text-primary"></i>Payment Control</h6>
+                <div class="d-flex align-items-center gap-2">
+                    <?php if ($paymentOpen): ?>
+                        <span class="badge bg-success">Accepting Payments</span>
+                    <?php else: ?>
+                        <span class="badge bg-danger">Payments Stopped</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="card-body">
+                <?php if (!empty($errors['payment'])): ?>
+                    <div class="alert alert-danger"><?= htmlspecialchars($errors['payment']) ?></div>
+                <?php endif; ?>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h6 class="fw-semibold mb-1"><?= $paymentOpen ? 'Online payment is currently active.' : 'Online payment is currently stopped.' ?></h6>
+                        <p class="text-muted small mb-0">
+                            Stopping payment prevents any new application fee transactions via Razorpay.
+                            Applicants can still access their application, view documents, download receipts,
+                            and use all other features independently. Previously completed payments are <strong>not affected</strong>.
+                        </p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <?php if ($paymentOpen): ?>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#stopPaymentWarningModal">
+                                <i class="bi bi-pause-circle-fill me-1"></i>Stop Payment
+                            </button>
+                        <?php else: ?>
+                            <form method="POST" action="<?= route('admin.settings') ?>">
+                                <?= SecurityHelper::csrfField() ?>
+                                <input type="hidden" name="action" value="payment_control">
+                                <input type="hidden" name="payment_open" value="1">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-play-circle-fill me-1"></i>Resume Payment
+                                </button>
                             </form>
                         <?php endif; ?>
                     </div>
@@ -318,6 +379,46 @@ ob_start();
                     <input type="hidden" name="action" value="registration_control">
                     <input type="hidden" name="registration_open" value="0">
                     <button type="submit" class="btn btn-danger"><i class="bi bi-lock-fill me-1"></i>Yes, Close Registration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($paymentOpen): ?>
+<div class="modal fade" id="stopPaymentWarningModal" tabindex="-1" aria-labelledby="stopPaymentWarningLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="stopPaymentWarningLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Stop Online Payment?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-semibold mb-2">Are you sure you want to stop online payments?</p>
+                <p class="text-muted small mb-2">This action will immediately:</p>
+                <ul class="small mb-3">
+                    <li>Block all new payment transactions via Razorpay.</li>
+                    <li>Show a "payment stopped" notice to applicants on the payment page.</li>
+                </ul>
+                <div class="alert alert-success border-0 small mb-0">
+                    <i class="bi bi-check-circle me-1"></i>
+                    <strong>These will continue to work normally:</strong> Application access, document viewing,
+                    payment receipts, queries, and all other portal features remain fully accessible.
+                    Previously completed payments are <strong>not affected</strong>.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="<?= route('admin.settings') ?>">
+                    <?= SecurityHelper::csrfField() ?>
+                    <input type="hidden" name="action" value="payment_control">
+                    <input type="hidden" name="payment_open" value="0">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-pause-circle-fill me-1"></i>Yes, Stop Payment
+                    </button>
                 </form>
             </div>
         </div>

@@ -55,6 +55,25 @@ class SiteSettingsHelper
         ],
     ];
 
+    // ── Payment control ──────────────────────────────────────────────────────
+
+    /**
+     * Returns true when online payment is allowed.
+     * Defaults to open (true) so the existing behaviour is unchanged until
+     * an admin explicitly stops payment from the Settings page.
+     */
+    public static function isPaymentOpen(): bool
+    {
+        return self::getSetting('payment_open', '1') === '1';
+    }
+
+    public static function setPaymentOpen(bool $isOpen): bool
+    {
+        return self::saveSetting('payment_open', $isOpen ? '1' : '0');
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+
     public static function isRegistrationOpen(): bool
     {
         if (self::getSetting('registration_open', '1') !== '1') {

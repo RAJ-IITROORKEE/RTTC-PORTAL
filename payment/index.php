@@ -28,6 +28,9 @@ if ($paid) {
     redirect(route('payment.confirmation'));
 }
 
+// Payment gate — admin can stop new payments from Settings
+$paymentOpen = SiteSettingsHelper::isPaymentOpen();
+
 // Get user info
 $stmt2 = $db->prepare("SELECT u.username, u.email, u.phone, p.firstname, p.lastname FROM users u LEFT JOIN personal_details p ON p.user_id=u.id WHERE u.id=?");
 $stmt2->bind_param('i', $userId);
@@ -57,7 +60,7 @@ if ($pendingStmt) {
 }
 
 $orderData = null;
-if ($pending && $razorpayKey !== '' && RAZORPAY_KEY_SECRET !== '') {
+if ($paymentOpen && $pending && $razorpayKey !== '' && RAZORPAY_KEY_SECRET !== '') {
     // A pending row may belong to an old Razorpay account/key after credentials change.
     $remoteOrder = PaymentHelper::fetchOrder(
         (string) $pending['razorpay_order_id'],
@@ -92,7 +95,9 @@ if ($pending && $razorpayKey !== '' && RAZORPAY_KEY_SECRET !== '') {
 
 // Create Razorpay order via API
 $orderError = null;
-if ($orderData === null && ($razorpayKey === '' || RAZORPAY_KEY_SECRET === '' || $amount <= 0)) {
+if (!$paymentOpen) {
+    $orderError = 'Online payment is currently stopped by the administrator. Your application and documents are safe — please check back later or contact the institute.';
+} elseif ($orderData === null && ($razorpayKey === '' || RAZORPAY_KEY_SECRET === '' || $amount <= 0)) {
     $orderError = 'Payment is temporarily unavailable. Please contact support.';
 } elseif ($orderData === null) {
     $receiptId = 'RTTC2026_' . $userId . '_' . bin2hex(random_bytes(6));

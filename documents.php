@@ -54,14 +54,16 @@ $docDefs = [
 ];
 
 // Conditionally required category certificates (based on personal details)
-if ($needsCaste) {
+// For OBC (Non-creamy layer) users, obc_ncl_cert covers the category certificate —
+// skip caste_cert to avoid asking for the same document twice.
+if ($needsCaste && !$userObcNcl) {
     $docDefs['caste_cert']   = [$userCaste . ' Caste Certificate',       true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userEws) {
     $docDefs['ews_cert']     = ['EWS Certificate',                        true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userObcNcl) {
-    $docDefs['obc_ncl_cert'] = ['OBC-NCL Certificate',                   true,  'application/pdf',                                 1024, ['pdf']];
+    $docDefs['obc_ncl_cert'] = ['OBC Non-Creamy Layer (NCL) Certificate', true,  'application/pdf',                                 1024, ['pdf']];
 }
 if ($userPwd) {
     $docDefs['pwd_cert']     = ['PWD Certificate',                        true,  'application/pdf',                                 1024, ['pdf']];
