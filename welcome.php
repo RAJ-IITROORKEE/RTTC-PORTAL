@@ -24,16 +24,30 @@ $currentStep = $hasSuccessfulPayment
 $isSubmitted = $hasSuccessfulPayment ? (int)($prog['is_submitted'] ?? 0) : 0;
 
 // Check if admin has granted active edit access to this user
-$editAccess = false;
 $now = date('Y-m-d H:i:s');
-$stmtEA = $db->prepare(
-    "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? LIMIT 1"
+
+// Full edit access (scope = 'all') — unlocks personal, academic, documents
+$stmtFull = $db->prepare(
+    "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND scope = 'all' LIMIT 1"
 );
-$stmtEA->bind_param('is', $userId, $now);
-$stmtEA->execute();
-$stmtEA->store_result();
-$editAccess = $stmtEA->num_rows > 0;
-$stmtEA->close();
+$stmtFull->bind_param('is', $userId, $now);
+$stmtFull->execute();
+$stmtFull->store_result();
+$fullEditAccess = $stmtFull->num_rows > 0;
+$stmtFull->close();
+
+// Document edit access (scope = 'all' or 'documents') — unlocks documents only
+$stmtDoc = $db->prepare(
+    "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1"
+);
+$stmtDoc->bind_param('is', $userId, $now);
+$stmtDoc->execute();
+$stmtDoc->store_result();
+$docEditAccess = $stmtDoc->num_rows > 0;
+$stmtDoc->close();
+
+// Backward compat: $editAccess = any active grant (used by legacy checks)
+$editAccess = $fullEditAccess || $docEditAccess;
 
 // Get user info
 $stmt2 = $db->prepare("SELECT username, created_at FROM users WHERE id = ?");
@@ -107,8 +121,8 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Personal Details</h6>
                     <p class="text-muted small mb-3">Name, DOB, family info, address</p>
-                    <?php if ($currentStep >= 1 && $registrationOpen): ?>
-                        <?php if ($editAccess): ?>
+                    <?php if ($currentStep >= 1 && ($registrationOpen || $fullEditAccess)): ?>
+                        <?php if ($fullEditAccess): ?>
                         <a href="<?= route('registration') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
@@ -145,8 +159,8 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Academic Details</h6>
                     <p class="text-muted small mb-3">HSLC, HSSLC, Degree, GUBEDCET</p>
-                    <?php if ($currentStep >= 2 && $registrationOpen): ?>
-                        <?php if ($editAccess): ?>
+                    <?php if ($currentStep >= 2 && ($registrationOpen || $fullEditAccess)): ?>
+                        <?php if ($fullEditAccess): ?>
                         <a href="<?= route('academics') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
@@ -183,8 +197,8 @@ ob_start();
                     </div>
                     <h6 class="fw-bold">Upload Documents</h6>
                     <p class="text-muted small mb-3">Photo, signature, certificates</p>
-                    <?php if ($currentStep >= 3 && $registrationOpen): ?>
-                        <?php if ($editAccess): ?>
+                    <?php if ($currentStep >= 3 && ($registrationOpen || $docEditAccess)): ?>
+                        <?php if ($docEditAccess): ?>
                         <a href="<?= route('documents') ?>" class="btn btn-sm btn-outline-warning">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
