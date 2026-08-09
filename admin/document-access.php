@@ -59,12 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'revoke_access') {
         $grantId = (int) ($_POST['grant_id'] ?? 0);
         if ($grantId > 0) {
-            // Revoke any grant (both 'all' and 'documents' scope)
-            $rev = $db->prepare("UPDATE user_edit_access SET is_active = 0, updated_at = NOW() WHERE id = ?");
+            // Only revoke document-scope grants from this page
+            $rev = $db->prepare("UPDATE user_edit_access SET is_active = 0, updated_at = NOW() WHERE id = ? AND scope = 'documents'");
             $rev->bind_param('i', $grantId);
             $rev->execute();
             $rev->close();
-            SessionHelper::setFlash('success', 'Edit access revoked successfully.');
+            SessionHelper::setFlash('success', 'Document edit access revoked successfully.');
             redirect(route('admin.document-access'));
         }
     }
@@ -93,10 +93,10 @@ if ($searchQuery !== '') {
     $searchResult = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    // Check if student already has active edit access (any scope)
+    // Check if student already has active document-scope access
     if ($searchResult) {
         $now = date('Y-m-d H:i:s');
-        $ea = $db->prepare("SELECT id, scope, expires_at, note, granted_at FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? ORDER BY granted_at DESC LIMIT 1");
+        $ea = $db->prepare("SELECT id, scope, expires_at, note, granted_at FROM user_edit_access WHERE user_id = ? AND scope = 'documents' AND is_active = 1 AND expires_at > ? LIMIT 1");
         $ea->bind_param('is', $searchResult['id'], $now);
         $ea->execute();
         $searchResult['active_grant'] = $ea->get_result()->fetch_assoc();
@@ -104,13 +104,13 @@ if ($searchQuery !== '') {
     }
 }
 
-// ── Active grants list ─────────────────────────────────────────────────────
+// ── Active grants list (only document-scope grants managed from this page) ──
 $now = date('Y-m-d H:i:s');
 $activeGrants = $db->prepare("
     SELECT ea.id, ea.user_id, ea.scope, ea.granted_at, ea.expires_at, ea.note, u.email, u.username
     FROM user_edit_access ea
     JOIN users u ON u.id = ea.user_id
-    WHERE ea.is_active = 1 AND ea.expires_at > ?
+    WHERE ea.scope = 'documents' AND ea.is_active = 1 AND ea.expires_at > ?
     ORDER BY ea.granted_at DESC
 ");
 $activeGrants->bind_param('s', $now);
@@ -207,8 +207,7 @@ ob_start();
                         <?php if ($searchResult['active_grant']): ?>
                             <div class="alert alert-info small mb-2">
                                 <i class="bi bi-check-circle-fill me-1"></i>
-                                <strong>Already has edit access</strong>
-                                <span class="badge bg-<?= $searchResult['active_grant']['scope'] === 'all' ? 'warning text-dark' : 'info' ?> ms-1"><?= $searchResult['active_grant']['scope'] === 'all' ? 'Full Access' : 'Documents Only' ?></span><br>
+                                <strong>Already has document edit access</strong><br>
                                 Expires: <?= date('d M Y, h:i A', strtotime($searchResult['active_grant']['expires_at'])) ?>
                                 <?php if ($searchResult['active_grant']['note']): ?>
                                     <br>Note: <?= htmlspecialchars($searchResult['active_grant']['note']) ?>
@@ -218,7 +217,7 @@ ob_start();
                                 <?= SecurityHelper::csrfField() ?>
                                 <input type="hidden" name="action" value="revoke_access">
                                 <input type="hidden" name="grant_id" value="<?= $searchResult['active_grant']['id'] ?>">
-                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Revoke edit access for this student?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Revoke document edit access for this student?')">
                                     <i class="bi bi-x-circle me-1"></i>Revoke Access
                                 </button>
                             </form>
@@ -255,14 +254,14 @@ ob_start();
 <!-- Active Grants Table -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-bottom pt-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Active Edit Grants</h6>
+        <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Active Document Edit Grants</h6>
         <span class="badge bg-success"><?= count($grants) ?> active</span>
     </div>
     <div class="card-body p-0">
         <?php if (empty($grants)): ?>
             <div class="text-center text-muted py-4">
                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                No active edit grants.
+                No active document edit grants.
             </div>
         <?php else: ?>
             <div class="table-responsive">
@@ -271,7 +270,6 @@ ob_start();
                         <tr>
                             <th>RTTC ID</th>
                             <th>Student</th>
-                            <th>Scope</th>
                             <th>Granted</th>
                             <th>Expires</th>
                             <th>Note</th>
@@ -286,7 +284,6 @@ ob_start();
                                 <div class="fw-medium"><?= htmlspecialchars($g['username']) ?></div>
                                 <small class="text-muted"><?= htmlspecialchars($g['email']) ?></small>
                             </td>
-                            <td><span class="badge bg-<?= $g['scope'] === 'all' ? 'warning text-dark' : 'info' ?>"><?= $g['scope'] === 'all' ? 'Full' : 'Docs Only' ?></span></td>
                             <td><small><?= date('d M Y', strtotime($g['granted_at'])) ?></small></td>
                             <td>
                                 <?php
@@ -303,7 +300,7 @@ ob_start();
                                     <?= SecurityHelper::csrfField() ?>
                                     <input type="hidden" name="action" value="revoke_access">
                                     <input type="hidden" name="grant_id" value="<?= $g['id'] ?>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Revoke edit access for RTTC-<?= str_pad((string)$g['user_id'], 5, '0', STR_PAD_LEFT) ?>?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Revoke document edit access for RTTC-<?= str_pad((string)$g['user_id'], 5, '0', STR_PAD_LEFT) ?>?')">
                                         <i class="bi bi-x-circle me-1"></i>Revoke
                                     </button>
                                 </form>

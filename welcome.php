@@ -36,10 +36,17 @@ $stmtFull->store_result();
 $fullEditAccess = $stmtFull->num_rows > 0;
 $stmtFull->close();
 
-// Document edit access (scope = 'all' or 'documents') — unlocks documents only
-$stmtDoc = $db->prepare(
-    "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1"
-);
+// Document edit access — when portal closed, ONLY scope='documents' grants work
+// When portal open, both 'all' and 'documents' grants work
+if ($registrationOpen) {
+    $stmtDoc = $db->prepare(
+        "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1"
+    );
+} else {
+    $stmtDoc = $db->prepare(
+        "SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND scope = 'documents' LIMIT 1"
+    );
+}
 $stmtDoc->bind_param('is', $userId, $now);
 $stmtDoc->execute();
 $stmtDoc->store_result();

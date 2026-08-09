@@ -71,7 +71,14 @@ if ($userPwd) {
 
 // ── View-only mode ─────────────────────────────────────────────────────────
 $now    = date('Y-m-d H:i:s');
-$stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1");
+
+// When portal is closed, ONLY explicit document-scope grants allow editing.
+// When portal is open, both 'all' and 'documents' grants allow editing.
+if ($registrationOpen) {
+    $stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND (scope = 'all' OR scope = 'documents') LIMIT 1");
+} else {
+    $stmtEA = $db->prepare("SELECT id FROM user_edit_access WHERE user_id = ? AND is_active = 1 AND expires_at > ? AND scope = 'documents' LIMIT 1");
+}
 $stmtEA->bind_param('is', $userId, $now);
 $stmtEA->execute();
 $stmtEA->store_result();
