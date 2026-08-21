@@ -27,6 +27,8 @@
     position: absolute;
     top: 0;
     left: 0;
+    display: grid;
+    grid-template-columns: 1fr 2px 1fr;
     width: 1600px;
     height: 1067px;
     overflow: hidden;
@@ -42,51 +44,51 @@
     justify-content: flex-start;
     width: 100%;
     height: 174px;
-    padding: 15px 34px 13px;
+    padding: 16px 20px 14px;
     color: var(--id-card-blue);
     background: #fff;
 }
 
 .id-card-letterhead-logo-wrap {
-    width: 122px;
-    height: 122px;
-    flex: 0 0 122px;
-    margin-right: 24px;
+    width: 96px;
+    height: 96px;
+    flex: 0 0 96px;
+    margin-right: 16px;
     overflow: hidden;
     background: #fff;
 }
 
 .id-card-letterhead-logo {
-    width: 122px;
-    height: 122px;
+    width: 96px;
+    height: 96px;
     object-fit: contain;
 }
 
 .id-card-letterhead-copy {
     min-width: 0;
-    max-width: 1365px;
-    flex: 0 1 1365px;
+    max-width: 647px;
+    flex: 0 1 647px;
     text-align: center;
 }
 
 .id-card-assamese {
-    padding-bottom: 4px;
-    border-bottom: 3px solid var(--id-card-blue);
-    font-size: 38px;
+    padding-bottom: 3px;
+    border-bottom: 2px solid var(--id-card-blue);
+    font-size: 24px;
     font-weight: 700;
     line-height: 1.05;
 }
 
 .id-card-college-name {
     margin-top: 2px;
-    font-size: 50px;
+    font-size: 32px;
     font-weight: 700;
     line-height: 1;
 }
 
 .id-card-recognition {
-    margin-top: 6px;
-    font-size: 19px;
+    margin-top: 5px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1.2;
 }
@@ -98,13 +100,6 @@
     background: var(--id-card-orange);
 }
 
-.id-card-sheet-body {
-    display: grid;
-    grid-template-columns: 1fr 2px 1fr;
-    width: 100%;
-    height: 881px;
-}
-
 .id-card-information,
 .id-card-instructions {
     position: relative;
@@ -113,8 +108,15 @@
 }
 
 .id-card-information {
+    padding: 0;
+}
+
+.id-card-information-content {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    height: 881px;
+    overflow: hidden;
     padding: 26px 40px 24px;
 }
 

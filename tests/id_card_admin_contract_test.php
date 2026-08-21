@@ -63,12 +63,21 @@ if (!$failures) {
     foreach (['id-card-sheet', 'id-card-information', 'id-card-divider', 'id-card-instructions', 'data-id-card-issue', 'data-id-card-valid-until', 'RTTC_logo_blue.png'] as $needle) {
         if (!str_contains($template, $needle)) $failures[] = 'Single-sheet template missing ' . $needle;
     }
+    $frontPosition = strpos($template, '<section class="id-card-information"');
+    $letterheadPosition = strpos($template, '<header class="id-card-letterhead">');
+    $frontContentPosition = strpos($template, '<div class="id-card-information-content">');
+    $instructionsPosition = strpos($template, '<section class="id-card-instructions"');
+    if ($frontPosition === false || $letterheadPosition === false || $frontContentPosition === false || $instructionsPosition === false
+        || !($frontPosition < $letterheadPosition && $letterheadPosition < $frontContentPosition && $frontContentPosition < $instructionsPosition)) {
+        $failures[] = 'College letterhead must be confined to the left front panel before its holder details.';
+    }
+    if (str_contains($template, 'id-card-sheet-body')) $failures[] = 'Card must not retain a shared body below a full-width letterhead.';
     $styleContracts = [
         '#id-card-export-root' => ['--id-card-ink: #20205f'],
-        '.id-card-sheet' => ['width: 1600px', 'height: 1067px', 'font-family: "Nirmala UI", Arial, Helvetica, sans-serif'],
+        '.id-card-sheet' => ['display: grid', 'grid-template-columns: 1fr 2px 1fr', 'width: 1600px', 'height: 1067px', 'font-family: "Nirmala UI", Arial, Helvetica, sans-serif'],
         '.id-card-letterhead' => ['justify-content: flex-start', 'height: 174px'],
-        '.id-card-letterhead-logo-wrap' => ['width: 122px', 'height: 122px'],
-        '.id-card-sheet-body' => ['grid-template-columns: 1fr 2px 1fr', 'height: 881px'],
+        '.id-card-letterhead-logo-wrap' => ['width: 96px', 'height: 96px'],
+        '.id-card-information-content' => ['height: 881px'],
         '.id-card-instruction-watermark' => ['opacity: .11'],
     ];
     foreach ($styleContracts as $selector => $needles) {
@@ -78,8 +87,8 @@ if (!$failures) {
             if (!str_contains($block, $needle)) $failures[] = $selector . ' missing ' . $needle;
         }
     }
-    $fixedHeight = $cssHeight('.id-card-letterhead') + $cssHeight('.id-card-accent-line') + $cssHeight('.id-card-sheet-body');
-    if ($fixedHeight !== 1067) $failures[] = 'Card header, accent, and body heights must total the 1067px capture canvas.';
+    $fixedHeight = $cssHeight('.id-card-letterhead') + $cssHeight('.id-card-accent-line') + $cssHeight('.id-card-information-content');
+    if ($fixedHeight !== 1067) $failures[] = 'Front letterhead, accent, and holder details must total the 1067px capture canvas.';
     foreach (['Georgia', 'Times New Roman'] as $needle) {
         if (str_contains($styles, $needle)) $failures[] = 'Card styling retains mixed font family: ' . $needle;
     }

@@ -13,21 +13,21 @@ $displayAddress = preg_replace('/\s+/u', ' ', trim((string) ($card['address'] ??
 ?>
 <div class="id-card-preview-stage">
     <section class="id-card-sheet" id="id-card-sheet" aria-label="Complete ID card">
-        <header class="id-card-letterhead">
-            <div class="id-card-letterhead-logo-wrap">
-                <img class="id-card-letterhead-logo" src="<?= $esc($logo) ?>" alt="RTTC logo">
-            </div>
-            <div class="id-card-letterhead-copy">
-                <div class="id-card-assamese" lang="as">ৰঙিয়া শিক্ষক প্ৰশিক্ষণ মহাবিদ্যালয়</div>
-                <div class="id-card-college-name">Rangia Teacher Training College</div>
-                <div class="id-card-recognition">Recognized by NCTE, affiliated to Gauhati University and conveyed concurrence by Govt. of Assam</div>
-            </div>
-        </header>
+        <section class="id-card-information" aria-label="Identity card front">
+            <header class="id-card-letterhead">
+                <div class="id-card-letterhead-logo-wrap">
+                    <img class="id-card-letterhead-logo" src="<?= $esc($logo) ?>" alt="RTTC logo">
+                </div>
+                <div class="id-card-letterhead-copy">
+                    <div class="id-card-assamese" lang="as">ৰঙিয়া শিক্ষক প্ৰশিক্ষণ মহাবিদ্যালয়</div>
+                    <div class="id-card-college-name">Rangia Teacher Training College</div>
+                    <div class="id-card-recognition">Recognized by NCTE, affiliated to Gauhati University and conveyed concurrence by Govt. of Assam</div>
+                </div>
+            </header>
 
-        <div class="id-card-accent-line" aria-hidden="true"></div>
+            <div class="id-card-accent-line" aria-hidden="true"></div>
 
-        <div class="id-card-sheet-body">
-            <section class="id-card-information" aria-label="Holder information">
+            <div class="id-card-information-content">
                 <div class="id-card-heading-row">
                     <h2><?= $isStudent ? 'Identity Card' : 'Faculty / Staff Identity Card' ?></h2>
                     <span><?= $esc($card['reference']) ?></span>
@@ -64,22 +64,22 @@ $displayAddress = preg_replace('/\s+/u', ' ', trim((string) ($card['address'] ??
                     <div><span>Official Stamp</span></div>
                     <div><span>Principal</span></div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <div class="id-card-divider" aria-hidden="true"></div>
+        <div class="id-card-divider" aria-hidden="true"></div>
 
-            <section class="id-card-instructions" aria-label="Instructions">
-                <img class="id-card-instruction-watermark" src="<?= $esc($logo) ?>" alt="" aria-hidden="true">
-                <h2>Instructions</h2>
-                <ul>
-                    <li>The signatory of this card is a <?= $esc($holderDescription) ?> of this college.</li>
-                    <li>The card holder must follow the rules and regulations of this institution.</li>
-                    <li>The card may be produced before any concerned authority for identifying the holder on demand.</li>
-                    <li>Please keep this card in safe custody. If the card is lost or damaged, the college authority will not be held responsible for any misuse of this card. Inform the college immediately if the card is lost or damaged.</li>
-                    <li>A charge of Rs. 100/- (one hundred) will be required to issue a duplicate card.</li>
-                    <li>The card holder must wear the card on his/her neck.</li>
-                </ul>
-            </section>
-        </div>
+        <section class="id-card-instructions" aria-label="Identity card back instructions">
+            <img class="id-card-instruction-watermark" src="<?= $esc($logo) ?>" alt="" aria-hidden="true">
+            <h2>Instructions</h2>
+            <ul>
+                <li>The signatory of this card is a <?= $esc($holderDescription) ?> of this college.</li>
+                <li>The card holder must follow the rules and regulations of this institution.</li>
+                <li>The card may be produced before any concerned authority for identifying the holder on demand.</li>
+                <li>Please keep this card in safe custody. If the card is lost or damaged, the college authority will not be held responsible for any misuse of this card. Inform the college immediately if the card is lost or damaged.</li>
+                <li>A charge of Rs. 100/- (one hundred) will be required to issue a duplicate card.</li>
+                <li>The card holder must wear the card on his/her neck.</li>
+            </ul>
+        </section>
     </section>
 </div>
