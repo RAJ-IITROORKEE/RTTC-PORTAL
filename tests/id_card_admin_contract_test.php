@@ -28,6 +28,14 @@ if (!$failures) {
     $export = file_get_contents($root . '/assets/js/id-card-export.js');
     $template = file_get_contents($root . '/views/components/id-card/template.php');
     $styles = file_get_contents($root . '/assets/css/id-card.css');
+    $cssBlock = static function (string $selector) use ($styles): string {
+        $pattern = '/(?:^|\n)\s*' . preg_quote($selector, '/') . '\s*\{([^}]*)\}/m';
+        return preg_match($pattern, $styles, $matches) === 1 ? $matches[1] : '';
+    };
+    $cssHeight = static function (string $selector) use ($cssBlock): ?int {
+        $block = $cssBlock($selector);
+        return preg_match('/\bheight:\s*(\d+)px\s*;/', $block, $matches) === 1 ? (int) $matches[1] : null;
+    };
 
     foreach ([
         'id_card_applications', 'LIMIT ? OFFSET ?', "route('id-card.student')", "route('id-card.faculty-staff')",
@@ -55,8 +63,25 @@ if (!$failures) {
     foreach (['id-card-sheet', 'id-card-information', 'id-card-divider', 'id-card-instructions', 'data-id-card-issue', 'data-id-card-valid-until', 'RTTC_logo_blue.png'] as $needle) {
         if (!str_contains($template, $needle)) $failures[] = 'Single-sheet template missing ' . $needle;
     }
-    foreach (['width: 1600px', 'height: 1067px', 'grid-template-columns: 1fr 2px 1fr'] as $needle) {
-        if (!str_contains($styles, $needle)) $failures[] = 'Wide card styling missing ' . $needle;
+    $styleContracts = [
+        '#id-card-export-root' => ['--id-card-ink: #20205f'],
+        '.id-card-sheet' => ['width: 1600px', 'height: 1067px', 'font-family: "Nirmala UI", Arial, Helvetica, sans-serif'],
+        '.id-card-letterhead' => ['justify-content: flex-start', 'height: 174px'],
+        '.id-card-letterhead-logo-wrap' => ['width: 122px', 'height: 122px'],
+        '.id-card-sheet-body' => ['grid-template-columns: 1fr 2px 1fr', 'height: 881px'],
+        '.id-card-instruction-watermark' => ['opacity: .11'],
+    ];
+    foreach ($styleContracts as $selector => $needles) {
+        $block = $cssBlock($selector);
+        if ($block === '') $failures[] = 'Card styling missing selector ' . $selector;
+        foreach ($needles as $needle) {
+            if (!str_contains($block, $needle)) $failures[] = $selector . ' missing ' . $needle;
+        }
+    }
+    $fixedHeight = $cssHeight('.id-card-letterhead') + $cssHeight('.id-card-accent-line') + $cssHeight('.id-card-sheet-body');
+    if ($fixedHeight !== 1067) $failures[] = 'Card header, accent, and body heights must total the 1067px capture canvas.';
+    foreach (['Georgia', 'Times New Roman'] as $needle) {
+        if (str_contains($styles, $needle)) $failures[] = 'Card styling retains mixed font family: ' . $needle;
     }
     if (str_contains($styles, 'mix-blend-mode')) $failures[] = 'Preview uses a blend mode unsupported by PNG capture.';
     foreach (['jsPDF', 'JSZip', 'makePdf', 'makeZip', '#id-card-front', '#id-card-back', '.zip', '.pdf'] as $needle) {
