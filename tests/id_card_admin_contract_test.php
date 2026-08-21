@@ -16,6 +16,9 @@ foreach ($files as $file) {
         $failures[] = $file . ' must exist.';
     }
 }
+if (!is_file($root . '/assets/img/RTTC_logo_blue.png')) {
+    $failures[] = 'Capture-safe blue RTTC logo asset must exist.';
+}
 
 if (!$failures) {
     $queue = file_get_contents($root . '/admin/id-cards/index.php');
@@ -23,6 +26,8 @@ if (!$failures) {
     $photo = file_get_contents($root . '/api/admin-id-card-photo.php');
     $review = file_get_contents($root . '/admin/id-cards/review.php');
     $export = file_get_contents($root . '/assets/js/id-card-export.js');
+    $template = file_get_contents($root . '/views/components/id-card/template.php');
+    $styles = file_get_contents($root . '/assets/css/id-card.css');
 
     foreach ([
         'id_card_applications', 'LIMIT ? OFFSET ?', "route('id-card.student')", "route('id-card.faculty-staff')",
@@ -44,8 +49,21 @@ if (!$failures) {
     foreach (['id-card-export-root', 'data-holder-name', "views/components/id-card/template.php", 'id-card-export.js'] as $needle) {
         if (!str_contains($review, $needle)) $failures[] = 'Review page missing export integration: ' . $needle;
     }
-    foreach (['waitForAssets', 'image.complete', 'naturalWidth > 0', "postAction(root, 'mark_done')"] as $needle) {
+    foreach (['waitForAssets', 'image.complete', 'naturalWidth > 0', "postAction(root, 'mark_done')", "'image/png'", "'.png'", "querySelector('#id-card-sheet')", 'CAPTURE_SCALE = 2'] as $needle) {
         if (!str_contains($export, $needle)) $failures[] = 'Export script missing asset/download guard: ' . $needle;
+    }
+    foreach (['id-card-sheet', 'id-card-information', 'id-card-divider', 'id-card-instructions', 'data-id-card-issue', 'data-id-card-valid-until', 'RTTC_logo_blue.png'] as $needle) {
+        if (!str_contains($template, $needle)) $failures[] = 'Single-sheet template missing ' . $needle;
+    }
+    foreach (['width: 1600px', 'height: 1067px', 'grid-template-columns: 1fr 2px 1fr'] as $needle) {
+        if (!str_contains($styles, $needle)) $failures[] = 'Wide card styling missing ' . $needle;
+    }
+    if (str_contains($styles, 'mix-blend-mode')) $failures[] = 'Preview uses a blend mode unsupported by PNG capture.';
+    foreach (['jsPDF', 'JSZip', 'makePdf', 'makeZip', '#id-card-front', '#id-card-back', '.zip', '.pdf'] as $needle) {
+        if (str_contains($export, $needle)) $failures[] = 'PNG-only export retains obsolete output behavior: ' . $needle;
+    }
+    foreach (['jspdf', 'jszip'] as $needle) {
+        if (stripos($review, $needle) !== false) $failures[] = 'Review page loads obsolete export library: ' . $needle;
     }
 }
 
