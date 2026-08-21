@@ -21,6 +21,7 @@ if ($queryCountResult) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Admin CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css?v=<?= filemtime(BASE_PATH . '/assets/css/admin.css') ?>">
+    <?= $extraHead ?? '' ?>
 </head>
 <body class="admin-body">
 
@@ -60,6 +61,9 @@ if ($queryCountResult) {
         </a>
         <a href="<?= route('admin.final-merit-list') ?>" class="sidebar-link <?= ($activePage ?? '') === 'final-merit-list' ? 'active' : '' ?>">
             <i class="bi bi-database-fill-check"></i><span>Final Merit List</span>
+        </a>
+        <a href="<?= route('admin.id-cards') ?>" class="sidebar-link <?= ($activePage ?? '') === 'id-cards' ? 'active' : '' ?>">
+            <i class="bi bi-person-vcard-fill"></i><span>ID Card</span>
         </a>
 
         <div class="nav-section-label">Support</div>

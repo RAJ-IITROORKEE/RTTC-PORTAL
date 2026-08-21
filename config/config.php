@@ -51,6 +51,23 @@ define('NOTICE_UPLOAD_DIR',  __DIR__ . '/../storage/uploads/notices/');
 define('MAX_FILE_SIZE',      (int) EnvHelper::get('MAX_FILE_SIZE', 5242880));
 define('ALLOWED_FILE_TYPES', ['jpg', 'jpeg', 'png', 'pdf']);
 
+// ── ID Card Module ────────────────────────────────────────────
+define('ID_CARD_UPLOAD_DIR', __DIR__ . '/../storage/uploads/id_cards/');
+define('ID_CARD_MAX_PHOTO_SIZE', (int) EnvHelper::get('ID_CARD_MAX_PHOTO_SIZE', 2097152));
+define('ID_CARD_MIN_PHOTO_WIDTH', (int) EnvHelper::get('ID_CARD_MIN_PHOTO_WIDTH', 600));
+define('ID_CARD_MIN_PHOTO_HEIGHT', (int) EnvHelper::get('ID_CARD_MIN_PHOTO_HEIGHT', 750));
+define('ID_CARD_MAX_PHOTO_WIDTH', (int) EnvHelper::get('ID_CARD_MAX_PHOTO_WIDTH', 4000));
+define('ID_CARD_MAX_PHOTO_HEIGHT', (int) EnvHelper::get('ID_CARD_MAX_PHOTO_HEIGHT', 5000));
+define('ID_CARD_MAX_PHOTO_PIXELS', (int) EnvHelper::get('ID_CARD_MAX_PHOTO_PIXELS', 12000000));
+define('ID_CARD_RATE_LIMIT_BUCKET_SECONDS', (int) EnvHelper::get('ID_CARD_RATE_LIMIT_BUCKET_SECONDS', 900));
+define('ID_CARD_RATE_LIMIT_MAX_ATTEMPTS', (int) EnvHelper::get('ID_CARD_RATE_LIMIT_MAX_ATTEMPTS', 8));
+define('ID_CARD_PUBLIC_FORM_MIN_SECONDS', (int) EnvHelper::get('ID_CARD_PUBLIC_FORM_MIN_SECONDS', 4));
+$idCardRateLimitSecret = (string) EnvHelper::get('ID_CARD_IP_HMAC_SECRET', '');
+if ($idCardRateLimitSecret === '' && APP_ENV !== 'production') {
+    $idCardRateLimitSecret = hash('sha256', DB_NAME . '|' . APP_URL . '|id-card-development-only');
+}
+define('ID_CARD_IP_HMAC_SECRET', $idCardRateLimitSecret);
+
 // ── Misc ─────────────────────────────────────────────────────
 define('RECORDS_PER_PAGE', 15);
 define('CONTACT_PHONE',    '+91 03621-359330');

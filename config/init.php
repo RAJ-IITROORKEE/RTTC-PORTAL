@@ -18,6 +18,7 @@ require_once ROOT_PATH . '/helpers/OTPHelper.php';
 require_once ROOT_PATH . '/helpers/UnpaidEmailHelper.php';
 require_once ROOT_PATH . '/helpers/SiteSettingsHelper.php';
 require_once ROOT_PATH . '/helpers/ApplicationHelper.php';
+require_once ROOT_PATH . '/helpers/IdCardHelper.php';
 require_once ROOT_PATH . '/helpers/GubedcetMeritListRepository.php';
 require_once ROOT_PATH . '/helpers/RegistrationHelper.php';
 

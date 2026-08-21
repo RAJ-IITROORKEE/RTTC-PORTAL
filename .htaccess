@@ -2,13 +2,14 @@ Options -MultiViews
 Options -Indexes
 
 # Deny access to sensitive files
-<FilesMatch "(\.env|composer\.(json|lock)|\.csv|data\.json|gubedcet_2026\.json)$">
+<FilesMatch "(\.env|composer\.(json|lock)|\.csv|\.sql|data\.json|gubedcet_2026\.json)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
 RewriteEngine On
 RewriteRule ^final_list/ - [F,L,NC]
+RewriteRule ^storage/uploads/id_cards/ - [F,L,NC]
 
 # ── Clean URL rewrites ────────────────────────────────────────
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -24,6 +25,8 @@ RewriteRule ^documents$               documents.php [L,QSA]
 RewriteRule ^forgot-password$         forgot-password.php [L,QSA]
 RewriteRule ^payment$                 payment/index.php [L,QSA]
 RewriteRule ^payment/confirmation$    payment/confirmation.php [L,QSA]
+RewriteRule ^id-card/student$          id-card/student.php [L,QSA]
+RewriteRule ^id-card/faculty-staff$    id-card/faculty-staff.php [L,QSA]
 RewriteRule ^api/send-otp$            api/send-otp.php [L,QSA]
 RewriteRule ^api/verify-otp$          api/verify-otp.php [L,QSA]
 RewriteRule ^api/check-email$         api/check-email.php [L,QSA]
@@ -43,6 +46,8 @@ RewriteRule ^admin/settings$          admin/settings.php [L,QSA]
 RewriteRule ^admin/notice-documents$  admin/notice-documents.php [L,QSA]
 RewriteRule ^admin/marquee$           admin/marquee.php [L,QSA]
 RewriteRule ^admin/final-merit-list$   admin/final-merit-list/index.php [L,QSA]
+RewriteRule ^admin/id-cards$           admin/id-cards/index.php [L,QSA]
+RewriteRule ^admin/id-cards/review$    admin/id-cards/review.php [L,QSA]
 RewriteRule ^admin/queries$           admin/queries/index.php [L,QSA]
 RewriteRule ^admin/documents$         admin/documents/index.php [L,QSA]
 RewriteRule ^admin/document-access$   admin/document-access.php [L,QSA]
@@ -53,6 +58,8 @@ RewriteRule ^api/admin-query-action$  api/admin-query-action.php [L,QSA]
 RewriteRule ^api/admin-delete-user$   api/admin-delete-user.php [L,QSA]
 RewriteRule ^api/admin-delete-payment$ api/admin-delete-payment.php [L,QSA]
 RewriteRule ^api/admin-send-unpaid-email$ api/admin-send-unpaid-email.php [L,QSA]
+RewriteRule ^api/admin-id-card-action$ api/admin-id-card-action.php [L,QSA]
+RewriteRule ^api/admin-id-card-photo$  api/admin-id-card-photo.php [L,QSA]
 RewriteRule ^error/404$               error/404.php [L,QSA]
 
 # Catch-all: friendly 404 page for unknown routes

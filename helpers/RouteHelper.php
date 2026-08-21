@@ -34,6 +34,10 @@ function route(string $name, array $params = []): string
         'payment.confirmation'=> '/payment/confirmation',
         'payment.webhook'     => '/api/payment-webhook',
 
+        // ID Card public forms
+        'id-card.student'     => '/id-card/student',
+        'id-card.faculty-staff' => '/id-card/faculty-staff',
+
         // API / AJAX
         'api.send-otp'        => '/api/send-otp',
         'api.verify-otp'      => '/api/verify-otp',
@@ -59,6 +63,8 @@ function route(string $name, array $params = []): string
         'admin.notice-documents'  => '/admin/notice-documents',
         'admin.marquee'           => '/admin/marquee',
          'admin.final-merit-list'    => '/admin/final-merit-list',
+         'admin.id-cards'            => '/admin/id-cards',
+         'admin.id-cards.review'     => '/admin/id-cards/review',
 
         // Query / Support
         'request-query'           => '/request-query',
@@ -75,7 +81,9 @@ function route(string $name, array $params = []): string
         'api.admin.query-action'  => '/api/admin-query-action',
          'api.admin.delete-user'   => '/api/admin-delete-user',
           'api.admin.delete-payment'=> '/api/admin-delete-payment',
-          'api.admin.send-unpaid-email' => '/api/admin-send-unpaid-email',
+           'api.admin.send-unpaid-email' => '/api/admin-send-unpaid-email',
+          'api.admin.id-card-action' => '/api/admin-id-card-action',
+          'api.admin.id-card-photo'  => '/api/admin-id-card-photo',
 
         // Errors
         'error.404'               => '/error/404',

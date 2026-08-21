@@ -15,14 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['form'] = 'Email and password are required.';
     } else {
         $db   = db();
-        $stmt = $db->prepare("SELECT id, name, email, password FROM admin_users WHERE email = ? AND is_active = 1");
+        $stmt = $db->prepare("SELECT id, name, email, password, role FROM admin_users WHERE email = ? AND is_active = 1");
         $stmt->bind_param('s', $email);
         $stmt->execute();
         $admin = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
         if ($admin && SecurityHelper::verifyPassword($password, $admin['password'])) {
-            SessionHelper::setAdminSession($admin['id'], $admin['email'], $admin['name'], 'admin');
+            SessionHelper::setAdminSession($admin['id'], $admin['email'], $admin['name'], $admin['role']);
             redirect('admin.dashboard');
         } else {
             $errors['form'] = 'Invalid email or password.';
