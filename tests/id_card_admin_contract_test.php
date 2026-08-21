@@ -16,8 +16,8 @@ foreach ($files as $file) {
         $failures[] = $file . ' must exist.';
     }
 }
-if (!is_file($root . '/assets/img/RTTC_logo_blue.png')) {
-    $failures[] = 'Capture-safe blue RTTC logo asset must exist.';
+if (!is_file($root . '/assets/img/RTTC_logo.jpeg')) {
+    $failures[] = 'Official black RTTC logo asset must exist.';
 }
 
 if (!$failures) {
@@ -60,9 +60,10 @@ if (!$failures) {
     foreach (['waitForAssets', 'image.complete', 'naturalWidth > 0', "postAction(root, 'mark_done')", "'image/png'", "'.png'", "querySelector('#id-card-sheet')", 'CAPTURE_SCALE = 2'] as $needle) {
         if (!str_contains($export, $needle)) $failures[] = 'Export script missing asset/download guard: ' . $needle;
     }
-    foreach (['id-card-sheet', 'id-card-information', 'id-card-divider', 'id-card-instructions', 'data-id-card-issue', 'data-id-card-valid-until', 'RTTC_logo_blue.png'] as $needle) {
+    foreach (['id-card-sheet', 'id-card-information', 'id-card-divider', 'id-card-instructions', 'id-card-heading--faculty', 'data-id-card-issue', 'data-id-card-valid-until', 'RTTC_logo.jpeg'] as $needle) {
         if (!str_contains($template, $needle)) $failures[] = 'Single-sheet template missing ' . $needle;
     }
+    if (str_contains($template, 'RTTC_logo_blue.png')) $failures[] = 'Card template must use the supplied black RTTC logo.';
     $frontPosition = strpos($template, '<section class="id-card-information"');
     $letterheadPosition = strpos($template, '<header class="id-card-letterhead">');
     $frontContentPosition = strpos($template, '<div class="id-card-information-content">');
@@ -75,9 +76,11 @@ if (!$failures) {
     $styleContracts = [
         '#id-card-export-root' => ['--id-card-ink: #20205f'],
         '.id-card-sheet' => ['display: grid', 'grid-template-columns: 1fr 2px 1fr', 'width: 1600px', 'height: 1067px', 'font-family: "Nirmala UI", Arial, Helvetica, sans-serif'],
-        '.id-card-letterhead' => ['justify-content: flex-start', 'height: 174px'],
+        '.id-card-letterhead' => ['justify-content: flex-start', 'height: 174px', 'color: var(--id-card-blue-dark)'],
         '.id-card-letterhead-logo-wrap' => ['width: 96px', 'height: 96px'],
+        '.id-card-assamese' => ['border-bottom: 2px solid var(--id-card-blue-dark)'],
         '.id-card-information-content' => ['height: 881px'],
+        '.id-card-heading-row h2.id-card-heading--faculty' => ['min-width: 0', 'padding: 7px 18px 8px', 'font-size: 23px', 'white-space: nowrap'],
         '.id-card-instruction-watermark' => ['opacity: .11'],
     ];
     foreach ($styleContracts as $selector => $needles) {

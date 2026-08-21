@@ -6,7 +6,7 @@ if (!defined('APP_INIT') || !isset($card) || !is_array($card)) {
 
 $esc = static fn(mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $isStudent = ($card['application_type'] ?? '') === IdCardHelper::TYPE_STUDENT;
-$logo = BASE_URL . '/assets/img/RTTC_logo_blue.png';
+$logo = BASE_URL . '/assets/img/RTTC_logo.jpeg';
 $dateOfBirth = !empty($card['date_of_birth']) ? date('d-m-Y', strtotime((string) $card['date_of_birth'])) : '';
 $holderDescription = $isStudent ? 'student-teacher' : 'faculty/staff member';
 $displayAddress = preg_replace('/\s+/u', ' ', trim((string) ($card['address'] ?? ''))) ?? '';
@@ -29,7 +29,7 @@ $displayAddress = preg_replace('/\s+/u', ' ', trim((string) ($card['address'] ??
 
             <div class="id-card-information-content">
                 <div class="id-card-heading-row">
-                    <h2><?= $isStudent ? 'Identity Card' : 'Faculty / Staff Identity Card' ?></h2>
+                    <h2 class="<?= $isStudent ? '' : 'id-card-heading--faculty' ?>"><?= $isStudent ? 'Identity Card' : 'Faculty / Staff Identity Card' ?></h2>
                     <span><?= $esc($card['reference']) ?></span>
                 </div>
 
