@@ -163,8 +163,10 @@ ob_start();
                     <div class="text-center py-4">
                         <i class="bi bi-check-circle-fill text-success" style="font-size:3.5rem;"></i>
                         <h2 class="h4 fw-bold mt-3">Application received</h2>
-                        <p class="text-muted mb-2">Your ID card application is pending review by the college authority.</p>
-                        <p class="mb-0">Request reference: <strong class="font-monospace"><?= htmlspecialchars($success['reference']) ?></strong></p>
+                        <p class="text-muted mb-2">Your <?= strtolower($typeLabel) ?> ID card application has been submitted successfully and is now pending review by the college authority.</p>
+                        <p>Request reference: <strong class="font-monospace"><?= htmlspecialchars($success['reference']) ?></strong></p>
+                        <p class="small text-muted mb-4">This application is now closed. The college authority will process the submitted details and photo.</p>
+                        <a href="<?= route('home') ?>" class="btn btn-primary"><i class="bi bi-house-door me-2"></i>Return to Home</a>
                     </div>
                     <?php else: ?>
                     <p class="text-muted mb-4">Complete every field carefully. The information submitted here will be reviewed before your ID card is issued.</p>
@@ -173,7 +175,7 @@ ob_start();
                     <div class="alert alert-danger" role="alert"><?= htmlspecialchars($errors['form']) ?></div>
                     <?php endif; ?>
 
-                    <form method="post" enctype="multipart/form-data" data-id-card-form novalidate>
+                    <form method="post" enctype="multipart/form-data" data-id-card-form data-id-card-max-photo-size="<?= ID_CARD_MAX_PHOTO_SIZE ?>">
                         <?= SecurityHelper::csrfField() ?>
                         <input type="hidden" name="submission_token" value="<?= htmlspecialchars($token) ?>">
                         <div class="position-absolute start-0" style="left:-10000px !important;top:auto;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
@@ -184,19 +186,19 @@ ob_start();
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label" for="id-card-full-name">Name <span class="text-danger">*</span></label>
-                                <input id="id-card-full-name" name="full_name" type="text" maxlength="80" class="form-control<?= $fieldClass('full_name') ?>" value="<?= htmlspecialchars($data['full_name'] ?? '') ?>" required>
+                                <input id="id-card-full-name" name="full_name" type="text" minlength="2" maxlength="80" class="form-control<?= $fieldClass('full_name') ?>" value="<?= htmlspecialchars($data['full_name'] ?? '') ?>" required>
                                 <?php if (isset($errors['full_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['full_name']) ?></div><?php endif; ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="id-card-care-of">C/O <span class="text-danger">*</span></label>
-                                <input id="id-card-care-of" name="care_of" type="text" maxlength="80" class="form-control<?= $fieldClass('care_of') ?>" value="<?= htmlspecialchars($data['care_of'] ?? '') ?>" required>
+                                <input id="id-card-care-of" name="care_of" type="text" minlength="2" maxlength="80" class="form-control<?= $fieldClass('care_of') ?>" value="<?= htmlspecialchars($data['care_of'] ?? '') ?>" required>
                                 <?php if (isset($errors['care_of'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['care_of']) ?></div><?php endif; ?>
                             </div>
 
                             <?php if ($isStudent): ?>
                             <div class="col-md-4">
                                 <label class="form-label" for="id-card-course">Course <span class="text-danger">*</span></label>
-                                <input id="id-card-course" name="course" type="text" maxlength="40" class="form-control<?= $fieldClass('course') ?>" value="<?= htmlspecialchars($data['course'] ?? 'B.Ed.') ?>" required>
+                                <input id="id-card-course" name="course" type="text" minlength="2" maxlength="40" class="form-control<?= $fieldClass('course') ?>" value="<?= htmlspecialchars($data['course'] ?? 'B.Ed.') ?>" required>
                                 <?php if (isset($errors['course'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['course']) ?></div><?php endif; ?>
                             </div>
                             <div class="col-md-4">
@@ -217,12 +219,12 @@ ob_start();
                             <?php else: ?>
                             <div class="col-md-6">
                                 <label class="form-label" for="id-card-department">Department <span class="text-danger">*</span></label>
-                                <input id="id-card-department" name="department" type="text" maxlength="70" class="form-control<?= $fieldClass('department') ?>" value="<?= htmlspecialchars($data['department'] ?? '') ?>" required>
+                                <input id="id-card-department" name="department" type="text" minlength="2" maxlength="70" class="form-control<?= $fieldClass('department') ?>" value="<?= htmlspecialchars($data['department'] ?? '') ?>" required>
                                 <?php if (isset($errors['department'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['department']) ?></div><?php endif; ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="id-card-designation">Designation <span class="text-danger">*</span></label>
-                                <input id="id-card-designation" name="designation" type="text" maxlength="70" class="form-control<?= $fieldClass('designation') ?>" value="<?= htmlspecialchars($data['designation'] ?? '') ?>" required>
+                                <input id="id-card-designation" name="designation" type="text" minlength="2" maxlength="70" class="form-control<?= $fieldClass('designation') ?>" value="<?= htmlspecialchars($data['designation'] ?? '') ?>" required>
                                 <?php if (isset($errors['designation'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['designation']) ?></div><?php endif; ?>
                             </div>
                             <?php endif; ?>
@@ -245,14 +247,14 @@ ob_start();
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="id-card-address">Address <span class="text-danger">*</span></label>
-                                <textarea id="id-card-address" name="address" rows="3" maxlength="220" class="form-control<?= $fieldClass('address') ?>" required><?= htmlspecialchars($data['address'] ?? '') ?></textarea>
+                                <textarea id="id-card-address" name="address" rows="3" minlength="5" maxlength="220" class="form-control<?= $fieldClass('address') ?>" required><?= htmlspecialchars($data['address'] ?? '') ?></textarea>
                                 <div class="form-text">Maximum 220 characters to keep the printed card readable.</div>
                                 <?php if (isset($errors['address'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['address']) ?></div><?php endif; ?>
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="id-card-photo">Photo <span class="text-danger">*</span></label>
                                 <input id="id-card-photo" name="photo" type="file" accept="image/jpeg,image/png" class="form-control<?= $fieldClass('photo') ?>" required>
-                                <div class="form-text">JPEG or PNG only, max 2 MB, at least 600 x 750 pixels, portrait orientation.</div>
+                                <div class="form-text">JPEG or PNG only, maximum file size 2 MB.</div>
                                 <?php if (isset($errors['photo'])): ?><div class="invalid-feedback d-block"><?= htmlspecialchars($errors['photo']) ?></div><?php endif; ?>
                                 <img id="id-card-photo-preview" alt="Selected photo preview" aria-hidden="true">
                             </div>
@@ -263,9 +265,15 @@ ob_start();
                                     <?php if (isset($errors['declaration'])): ?><div class="invalid-feedback"><?= htmlspecialchars($errors['declaration']) ?></div><?php endif; ?>
                                 </div>
                             </div>
-                            <div class="col-12 d-flex justify-content-end pt-2">
+                            <div class="col-12" data-id-card-validation-status role="status" aria-live="polite" hidden></div>
+                            <div class="col-12 d-flex justify-content-end pt-2" data-id-card-submit-wrap hidden>
                                 <button type="submit" class="btn btn-primary px-4" data-id-card-confirm><i class="bi bi-send-check me-2"></i>Review and Submit</button>
                             </div>
+                            <noscript>
+                                <div class="col-12 d-flex justify-content-end pt-2">
+                                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-send-check me-2"></i>Submit Application</button>
+                                </div>
+                            </noscript>
                         </div>
                     </form>
                     <?php endif; ?>

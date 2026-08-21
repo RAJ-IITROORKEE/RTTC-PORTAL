@@ -243,15 +243,9 @@ class IdCardHelper
         $width = (int) $imageInfo[0];
         $height = (int) $imageInfo[1];
         $imageMime = image_type_to_mime_type((int) $imageInfo[2]);
-        if ($imageMime !== $mime || $width < ID_CARD_MIN_PHOTO_WIDTH || $height < ID_CARD_MIN_PHOTO_HEIGHT) {
-            return self::photoError('Use a clear portrait photo of at least 600 x 750 pixels.');
-        }
+        if ($imageMime !== $mime) return self::photoError('The uploaded file is not a valid JPEG or PNG image.');
         if ($width > ID_CARD_MAX_PHOTO_WIDTH || $height > ID_CARD_MAX_PHOTO_HEIGHT || ($width * $height) > ID_CARD_MAX_PHOTO_PIXELS) {
-            return self::photoError('Photo dimensions are too large.');
-        }
-        $ratio = $width / $height;
-        if ($ratio < 0.55 || $ratio > 1.0) {
-            return self::photoError('Use a portrait-oriented photo.');
+            return self::photoError('The uploaded image is too large to process safely. Choose a smaller image.');
         }
 
         $source = $mime === 'image/jpeg'
